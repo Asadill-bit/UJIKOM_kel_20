@@ -1,53 +1,398 @@
 <!DOCTYPE html>
 <html lang="id">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Masuk | Monitoring IoT</title>
-  <link rel="stylesheet" href="css/style.css" />
-  <link rel="stylesheet" href="css/login.css" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    *, *::before, *::after {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --bg-deep:       #070c1b;
+      --bg-card:       #111827;
+      --bg-input:      #0d1424;
+      --border-subtle: rgba(56, 189, 248, 0.12);
+      --cyan:          #38bdf8;
+      --blue:          #2563eb;
+      --text-primary:  #f1f5f9;
+      --text-muted:    #94a3b8;
+      --glow-cyan:     rgba(56, 189, 248, 0.35);
+      --glow-blue:     rgba(37, 99, 235, 0.25);
+      --radius-card:   18px;
+      --radius-input:  12px;
+      --radius-btn:    50px;
+    }
+
+    html, body { height: 100%; }
+
+    body {
+      font-family: 'Poppins', sans-serif;
+      background-color: var(--bg-deep);
+      color: var(--text-primary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      overflow: hidden;
+      position: relative;
+    }
+
+    body::before, body::after {
+      content: '';
+      position: fixed;
+      border-radius: 50%;
+      filter: blur(120px);
+      pointer-events: none;
+      z-index: 0;
+    }
+    body::before {
+      width: 520px; height: 520px;
+      background: radial-gradient(circle, rgba(37,99,235,0.18) 0%, transparent 70%);
+      top: -160px; left: -160px;
+    }
+    body::after {
+      width: 460px; height: 460px;
+      background: radial-gradient(circle, rgba(56,189,248,0.14) 0%, transparent 70%);
+      bottom: -140px; right: -140px;
+    }
+
+    .login-wrapper {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      max-width: 440px;
+      padding: 20px;
+      animation: fadeUp 0.6s ease both;
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(28px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .login-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-card);
+      padding: 44px 40px 40px;
+      box-shadow:
+        0 0 0 1px rgba(255,255,255,0.04),
+        0 24px 60px rgba(0,0,0,0.55),
+        0 0 80px rgba(56,189,248,0.06);
+    }
+
+    /* ── Logo ── */
+    .login-logo {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 28px;
+    }
+
+    .logo-mark {
+      width: 68px;
+      height: 68px;
+      background: #ffffff;
+      border-radius: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 28px var(--glow-cyan);
+      overflow: hidden;
+      padding: 6px;
+    }
+
+    .logo-mark img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      display: block;
+    }
+
+    .login-logo h1 {
+      font-size: 1.05rem;
+      font-weight: 600;
+      letter-spacing: 0.01em;
+      color: var(--text-primary);
+    }
+
+    .login-logo h1 strong {
+      background: linear-gradient(90deg, var(--cyan), var(--blue));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    /* ── Divider ── */
+    .divider {
+      border: none;
+      border-top: 1px solid rgba(255,255,255,0.06);
+      margin: 0 0 24px;
+    }
+
+    /* ── Title ── */
+    .login-title {
+      text-align: center;
+      margin-bottom: 28px;
+    }
+
+    .login-title h2 {
+      font-size: 1.55rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: var(--text-primary);
+    }
+
+    .login-title p {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      margin-top: 5px;
+      font-weight: 400;
+    }
+
+    /* ── Form fields ── */
+    .form-group { margin-bottom: 16px; }
+
+    .form-group label {
+      display: block;
+      font-size: 0.78rem;
+      font-weight: 500;
+      color: var(--text-muted);
+      margin-bottom: 7px;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+    }
+
+    .input-wrap { position: relative; }
+
+    .input-icon {
+      position: absolute;
+      left: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 15px;
+      color: var(--text-muted);
+      pointer-events: none;
+    }
+
+    .input-wrap input {
+      width: 100%;
+      background: var(--bg-input);
+      border: 1px solid rgba(255,255,255,0.07);
+      border-radius: var(--radius-input);
+      color: var(--text-primary);
+      font-family: 'Poppins', sans-serif;
+      font-size: 0.88rem;
+      padding: 13px 42px 13px 40px;
+      outline: none;
+      transition: border-color 0.25s, box-shadow 0.25s;
+    }
+
+    .input-wrap input::placeholder { color: #475569; }
+
+    .input-wrap input:focus {
+      border-color: rgba(56,189,248,0.45);
+      box-shadow: 0 0 0 3px rgba(56,189,248,0.1);
+    }
+
+    .eye-toggle {
+      position: absolute;
+      right: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: var(--text-muted);
+      font-size: 15px;
+      padding: 0;
+      transition: color 0.2s;
+    }
+    .eye-toggle:hover { color: var(--cyan); }
+
+    /* ── Remember me ── */
+    .remember-row {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      margin-bottom: 26px;
+      margin-top: 4px;
+    }
+
+    .remember-row input[type="checkbox"] {
+      appearance: none;
+      -webkit-appearance: none;
+      width: 17px;
+      height: 17px;
+      border: 1px solid rgba(255,255,255,0.18);
+      border-radius: 5px;
+      background: var(--bg-input);
+      cursor: pointer;
+      flex-shrink: 0;
+      position: relative;
+      transition: background 0.2s, border-color 0.2s;
+    }
+
+    .remember-row input[type="checkbox"]:checked {
+      background: linear-gradient(135deg, var(--cyan), var(--blue));
+      border-color: transparent;
+    }
+
+    .remember-row input[type="checkbox"]:checked::after {
+      content: '';
+      position: absolute;
+      left: 4px; top: 2px;
+      width: 6px; height: 9px;
+      border: 2px solid #fff;
+      border-top: none;
+      border-left: none;
+      transform: rotate(45deg);
+    }
+
+    .remember-row label {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      cursor: pointer;
+      user-select: none;
+    }
+
+    /* ── Button ── */
+    .btn-primary {
+      display: block;
+      width: 100%;
+      padding: 14px 20px;
+      background: linear-gradient(90deg, var(--cyan) 0%, var(--blue) 100%);
+      color: #fff;
+      font-family: 'Poppins', sans-serif;
+      font-size: 0.92rem;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      border: none;
+      border-radius: var(--radius-btn);
+      cursor: pointer;
+      box-shadow: 0 0 20px var(--glow-cyan), 0 4px 15px var(--glow-blue);
+      transition: transform 0.2s, box-shadow 0.2s, opacity 0.2s;
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 0 30px var(--glow-cyan), 0 8px 24px var(--glow-blue);
+    }
+
+    .btn-primary:active { transform: translateY(0); opacity: 0.9; }
+
+    /* ── Back link ── */
+    .back-link {
+      text-align: center;
+      margin-top: 22px;
+      font-size: 0.8rem;
+    }
+
+    .back-link a {
+      color: var(--cyan);
+      text-decoration: none;
+      font-weight: 500;
+      transition: opacity 0.2s;
+    }
+    .back-link a:hover { opacity: 0.75; }
+
+    @media (max-width: 480px) {
+      .login-card { padding: 36px 26px 32px; }
+    }
+  </style>
 </head>
-<body class="login-body">
+
+<body>
+
   <div class="login-wrapper">
     <div class="login-card">
-      <div class="login-brand">
-        <img src="img/logo.png" alt="Logo" />
-        <h1>Selamat Datang Kembali</h1>
-        <p>Masuk untuk mengakses dashboard monitoring Anda</p>
+
+      <!-- Logo -->
+      <div class="login-logo">
+        <div class="logo-mark">
+          <img src="data:image/png;base64,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" alt="IDN Logo" />
+        </div>
+        <h1>Monitoring<strong>IoT</strong></h1>
       </div>
 
-      <form id="loginForm" class="login-form">
-        <div class="form-group">
-          <label for="email">Email</label>
-          <input type="email" id="username" placeholder="nama@email.com" required />
-        </div>
-        <div class="form-group password-group">
-          <label for="password">Password</label>
-          <div class="input-wrapper">
-            <input type="password" id="password" placeholder="••••••••" required />
-            <button type="button" class="toggle-pass-btn" onclick="togglePassword()">👁️</button>
-          </div>
-        </div>
-        <div class="form-row">
-          <label class="checkbox">
-            <input type="checkbox" /> Ingat saya
-          </label>
-          <a href="#" class="link">Lupa password?</a>
-        </div>
-        <button type="submit" class="btn btn-primary btn-block">Masuk</button>
-        <p id="loginMessage" class="form-message"></p>
-        <p class="form-footer">Belum punya akun? <a href="#" class="link">Daftar di sini</a></p>
-      </form>
-    </div>
+      <hr class="divider">
 
-    <div class="login-art">
-      <div class="art-content">
-        <h2>Monitoring <br/>Lebih Cerdas</h2>
-        <p>Pantau seluruh sensor IoT Anda dalam satu dashboard yang elegan dan modern.</p>
+      <!-- Title -->
+      <div class="login-title">
+        <h2>Selamat Datang</h2>
+        <p>Masuk ke dashboard monitoring Anda</p>
       </div>
+
+      <!-- Email -->
+      <div class="form-group">
+        <label for="email">Email</label>
+        <div class="input-wrap">
+          <span class="input-icon">✉</span>
+          <input type="email" id="email" placeholder="nama@email.com" autocomplete="email" />
+        </div>
+      </div>
+
+      <!-- Password -->
+      <div class="form-group">
+        <label for="password">Kata Sandi</label>
+        <div class="input-wrap">
+          <span class="input-icon">🔒</span>
+          <input type="password" id="password" placeholder="••••••••" autocomplete="current-password" />
+          <button class="eye-toggle" type="button" aria-label="Tampilkan sandi" onclick="togglePassword()">👁</button>
+        </div>
+      </div>
+
+      <!-- Remember me -->
+      <div class="remember-row">
+        <input type="checkbox" id="remember" />
+        <label for="remember">Ingat saya</label>
+      </div>
+
+      <!-- Submit -->
+      <button class="btn-primary" type="button" onclick="handleLogin()">Masuk</button>
+
+      <div class="back-link">
+        <a href="index.html">← Kembali ke Beranda</a>
+      </div>
+
     </div>
   </div>
 
-  <script type="module" src="js/auth.js"></script>
+  <script>
+    function togglePassword() {
+      const input = document.getElementById('password');
+      const btn = document.querySelector('.eye-toggle');
+      if (input.type === 'password') {
+        input.type = 'text';
+        btn.textContent = '🙈';
+      } else {
+        input.type = 'password';
+        btn.textContent = '👁';
+      }
+    }
+
+    function handleLogin() {
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+      if (!email || !password) {
+        alert('Mohon isi email dan kata sandi.');
+        return;
+      }
+      // firebase.auth().signInWithEmailAndPassword(email, password)...
+      console.log('Login:', email);
+    }
+  </script>
+
 </body>
 </html>
