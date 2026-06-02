@@ -4,175 +4,731 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Dashboard | Monitoring IoT</title>
-  <link rel="stylesheet" href="css/style.css" />
-  <link rel="stylesheet" href="css/dashboard.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
-    /* ===== Relay Toggle Switch ===== */
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --bg-deep:       #070c1b;
+      --bg-sidebar:    #0d1424;
+      --bg-card:       #111827;
+      --bg-card2:      #131e30;
+      --bg-input:      #0d1424;
+      --border:        rgba(56,189,248,0.10);
+      --border-light:  rgba(255,255,255,0.06);
+      --cyan:          #38bdf8;
+      --blue:          #2563eb;
+      --green:         #22c55e;
+      --amber:         #f59e0b;
+      --red:           #ef4444;
+      --text-primary:  #f1f5f9;
+      --text-muted:    #64748b;
+      --glow-cyan:     rgba(56,189,248,0.30);
+      --glow-blue:     rgba(37,99,235,0.20);
+    }
+
+    html, body { height: 100%; font-family: 'Poppins', sans-serif; background: var(--bg-deep); color: var(--text-primary); }
+
+    /* ═══ LAYOUT ═══ */
+    .app-shell { display: flex; height: 100vh; overflow: hidden; }
+
+    /* ═══ SIDEBAR ═══ */
+    .sidebar {
+      width: 240px;
+      flex-shrink: 0;
+      background: var(--bg-sidebar);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      padding: 0;
+      position: relative;
+      z-index: 10;
+    }
+
+    .sidebar::after {
+      content: '';
+      position: absolute;
+      top: 0; right: 0;
+      width: 1px; height: 100%;
+      background: linear-gradient(to bottom, transparent, rgba(56,189,248,0.2), transparent);
+      pointer-events: none;
+    }
+
+    .sidebar-brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 24px 20px 20px;
+      border-bottom: 1px solid var(--border-light);
+      margin-bottom: 8px;
+    }
+
+    .brand-logo {
+      width: 38px;
+      height: 38px;
+      background: #fff;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      padding: 4px;
+      box-shadow: 0 0 16px var(--glow-cyan);
+      flex-shrink: 0;
+    }
+
+    .brand-logo img {
+      width: 100%; height: 100%;
+      object-fit: contain;
+      display: block;
+    }
+
+    .sidebar-brand span {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: var(--text-primary);
+      letter-spacing: 0.01em;
+    }
+
+    .sidebar-brand strong {
+      background: linear-gradient(90deg, var(--cyan), var(--blue));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .sidebar-nav {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      padding: 8px 12px;
+      flex: 1;
+    }
+
+    .sidebar-nav a {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 11px 14px;
+      border-radius: 10px;
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--text-muted);
+      text-decoration: none;
+      transition: all 0.2s;
+      letter-spacing: 0.01em;
+    }
+
+    .sidebar-nav a:hover {
+      background: rgba(56,189,248,0.07);
+      color: var(--text-primary);
+    }
+
+    .sidebar-nav a.active {
+      background: linear-gradient(90deg, rgba(56,189,248,0.15), rgba(37,99,235,0.10));
+      color: var(--cyan);
+      border: 1px solid rgba(56,189,248,0.18);
+    }
+
+    .sidebar-nav a.logout {
+      margin-top: auto;
+      color: #f87171;
+    }
+
+    .sidebar-nav a.logout:hover {
+      background: rgba(239,68,68,0.10);
+      color: #ef4444;
+    }
+
+    .sidebar-footer {
+      padding: 16px 20px;
+      border-top: 1px solid var(--border-light);
+    }
+
+    .sidebar-footer a {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 14px;
+      border-radius: 10px;
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: #f87171;
+      text-decoration: none;
+      transition: all 0.2s;
+    }
+
+    .sidebar-footer a:hover {
+      background: rgba(239,68,68,0.10);
+      color: #ef4444;
+    }
+
+    /* ═══ MAIN ═══ */
+    .main {
+      flex: 1;
+      overflow-y: auto;
+      background: var(--bg-deep);
+      padding: 0;
+    }
+
+    /* custom scrollbar */
+    .main::-webkit-scrollbar { width: 6px; }
+    .main::-webkit-scrollbar-track { background: transparent; }
+    .main::-webkit-scrollbar-thumb { background: rgba(56,189,248,0.2); border-radius: 3px; }
+
+    /* ═══ TOPBAR ═══ */
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 22px 28px;
+      border-bottom: 1px solid var(--border-light);
+      position: sticky;
+      top: 0;
+      background: rgba(7,12,27,0.85);
+      backdrop-filter: blur(12px);
+      z-index: 5;
+    }
+
+    .topbar h1 {
+      font-size: 1.25rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      background: linear-gradient(90deg, #fff 60%, var(--cyan));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .topbar p { font-size: 0.8rem; color: var(--text-muted); margin-top: 3px; }
+
+    .topbar-actions { display: flex; align-items: center; gap: 12px; }
+
+    .status-pill {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      background: rgba(34,197,94,0.10);
+      border: 1px solid rgba(34,197,94,0.25);
+      border-radius: 50px;
+      padding: 6px 14px;
+      font-size: 0.78rem;
+      font-weight: 500;
+      color: var(--green);
+    }
+
+    .dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .dot.online { background: var(--green); box-shadow: 0 0 6px var(--green); animation: pulse-dot 2s infinite; }
+    .dot.warn   { background: var(--amber); }
+    .dot.off    { background: var(--red); }
+
+    @keyframes pulse-dot {
+      0%,100% { opacity: 1; }
+      50%      { opacity: 0.4; }
+    }
+
+    .avatar {
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--cyan), var(--blue));
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.85rem; font-weight: 700; color: #fff;
+      box-shadow: 0 0 12px var(--glow-cyan);
+    }
+
+    /* ═══ CONTENT WRAPPER ═══ */
+    .content { padding: 24px 28px; display: flex; flex-direction: column; gap: 20px; }
+
+    /* ═══ STAT CARDS ═══ */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+    }
+
+    .stat-card {
+      border-radius: 16px;
+      padding: 22px 24px;
+      border: 1px solid var(--border);
+      position: relative;
+      overflow: hidden;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .stat-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 32px rgba(0,0,0,0.4);
+    }
+
+    .stat-card::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      opacity: 0.08;
+      border-radius: inherit;
+    }
+
+    .stat-card.grad-blue {
+      background: linear-gradient(135deg, #1d3a6e 0%, #0f1f40 100%);
+      border-color: rgba(56,189,248,0.2);
+    }
+    .stat-card.grad-purple {
+      background: linear-gradient(135deg, #2d1b5e 0%, #160d30 100%);
+      border-color: rgba(139,92,246,0.2);
+    }
+
+    .stat-card small {
+      font-size: 0.78rem;
+      font-weight: 500;
+      color: rgba(255,255,255,0.6);
+      letter-spacing: 0.02em;
+      display: block;
+      margin-bottom: 10px;
+    }
+
+    .stat-card h2 {
+      font-size: 2rem;
+      font-weight: 700;
+      color: #fff;
+      letter-spacing: -0.03em;
+      line-height: 1;
+    }
+
+    .trend {
+      font-size: 0.75rem;
+      font-weight: 500;
+      margin-top: 10px;
+      display: inline-block;
+      padding: 3px 8px;
+      border-radius: 50px;
+    }
+    .trend.up   { background: rgba(34,197,94,0.15);  color: #4ade80; }
+    .trend.down { background: rgba(239,68,68,0.15);  color: #f87171; }
+    .trend.neutral { background: rgba(100,116,139,0.2); color: var(--text-muted); }
+
+    /* ═══ PANELS ═══ */
+    .panel {
+      background: var(--bg-card);
+      border: 1px solid var(--border-light);
+      border-radius: 16px;
+      overflow: hidden;
+    }
+
+    .panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 18px 20px;
+      border-bottom: 1px solid var(--border-light);
+    }
+
+    .panel-header h3 {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .panel-header select {
+      background: var(--bg-input);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text-primary);
+      font-family: 'Poppins', sans-serif;
+      font-size: 0.78rem;
+      padding: 6px 10px;
+      outline: none;
+      cursor: pointer;
+    }
+
+    .panel-header select:focus {
+      border-color: rgba(56,189,248,0.4);
+    }
+
+    .panel-body { padding: 20px; }
+
+    /* ═══ DASHBOARD GRID ═══ */
+    .dashboard-grid {
+      display: grid;
+      grid-template-columns: 1fr 340px;
+      gap: 20px;
+    }
+
+    /* chart panel */
+    .chart-panel .panel-body { padding: 20px 20px 16px; }
+
+    /* ═══ ACTIVITY LIST ═══ */
+    .activity-list {
+      list-style: none;
+      padding: 12px 0;
+    }
+
+    .activity-list li {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 11px 20px;
+      font-size: 0.83rem;
+      color: var(--text-muted);
+      border-bottom: 1px solid var(--border-light);
+      transition: background 0.15s;
+    }
+
+    .activity-list li:last-child { border-bottom: none; }
+    .activity-list li:hover { background: rgba(255,255,255,0.02); }
+
+    .activity-list li small {
+      margin-left: auto;
+      font-size: 0.74rem;
+      color: #475569;
+    }
+
+    /* ═══ RELAY CONTROL ═══ */
+    .relay-row {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 16px 20px;
+    }
+
+    .relay-info { flex: 1; }
+    .relay-info strong { font-size: 0.92rem; font-weight: 600; color: var(--text-primary); }
+    .relay-info span   { font-size: 0.8rem; color: var(--text-muted); display: block; margin-top: 2px; }
+
+    .relay-label {
+      font-size: 0.82rem;
+      font-weight: 600;
+      min-width: 36px;
+      text-align: right;
+    }
+    .relay-label.on  { color: var(--green); }
+    .relay-label.off { color: var(--text-muted); }
+
+    /* Toggle switch */
     .relay-switch {
       position: relative;
       display: inline-block;
-      width: 56px;
-      height: 30px;
-      cursor: pointer;
-      flex-shrink: 0;
+      width: 52px; height: 28px;
+      cursor: pointer; flex-shrink: 0;
     }
-    .relay-switch input {
-      opacity: 0;
-      width: 0;
-      height: 0;
-    }
+    .relay-switch input { opacity: 0; width: 0; height: 0; }
     .relay-slider {
       position: absolute;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background: #cbd5e1;
-      border-radius: 30px;
+      inset: 0;
+      background: rgba(255,255,255,0.1);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 28px;
       transition: 0.3s;
     }
     .relay-slider::before {
       content: "";
       position: absolute;
-      width: 22px; height: 22px;
-      left: 4px; bottom: 4px;
+      width: 20px; height: 20px;
+      left: 3px; bottom: 3px;
       background: white;
       border-radius: 50%;
       transition: 0.3s;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+      box-shadow: 0 2px 6px rgba(0,0,0,0.4);
     }
     .relay-switch input:checked + .relay-slider {
-      background: #22c55e;
+      background: linear-gradient(90deg, var(--cyan), var(--green));
+      border-color: transparent;
+      box-shadow: 0 0 12px rgba(34,197,94,0.4);
     }
     .relay-switch input:checked + .relay-slider::before {
-      transform: translateX(26px);
+      transform: translateX(24px);
     }
-    .relay-switch:hover .relay-slider {
-      filter: brightness(0.95);
+
+    .relay-status-bar {
+      padding: 10px 20px 16px;
+      font-size: 0.78rem;
+      color: var(--text-muted);
     }
-    /* Badge status sensor */
+
+    /* ═══ TABLE ═══ */
+    .table-wrap { overflow-x: auto; }
+
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.83rem;
+    }
+
+    .data-table thead th {
+      padding: 12px 20px;
+      text-align: left;
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      border-bottom: 1px solid var(--border-light);
+      background: rgba(255,255,255,0.02);
+    }
+
+    .data-table tbody td {
+      padding: 13px 20px;
+      color: var(--text-primary);
+      border-bottom: 1px solid var(--border-light);
+      transition: background 0.15s;
+    }
+
+    .data-table tbody tr:last-child td { border-bottom: none; }
+    .data-table tbody tr:hover td { background: rgba(255,255,255,0.025); }
+
     .badge-pill {
-      padding: 4px 10px;
+      display: inline-block;
+      padding: 3px 10px;
       border-radius: 20px;
-      font-size: 12px;
+      font-size: 0.72rem;
       font-weight: 600;
     }
-    .badge-pill.ok   { background: #dcfce7; color: #15803d; }
-    .badge-pill.warn { background: #fef9c3; color: #a16207; }
-    .badge-pill.err  { background: #fee2e2; color: #b91c1c; }
+    .badge-pill.ok   { background: rgba(34,197,94,0.15);  color: #4ade80; border: 1px solid rgba(34,197,94,0.2); }
+    .badge-pill.warn { background: rgba(245,158,11,0.15); color: #fbbf24; border: 1px solid rgba(245,158,11,0.2); }
+    .badge-pill.err  { background: rgba(239,68,68,0.15);  color: #f87171; border: 1px solid rgba(239,68,68,0.2); }
+
+    /* ═══ MUTED TEXT ═══ */
+    .muted { color: var(--text-muted); }
+
+    /* ═══ RESPONSIVE ═══ */
+    @media (max-width: 900px) {
+      .dashboard-grid { grid-template-columns: 1fr; }
+      .stats-grid { grid-template-columns: 1fr 1fr; }
+    }
+    @media (max-width: 600px) {
+      .sidebar { display: none; }
+      .stats-grid { grid-template-columns: 1fr; }
+    }
   </style>
 </head>
 
 <body>
-
   <div class="app-shell">
-    <!-- Sidebar -->
+
+    <!-- ── SIDEBAR ── -->
     <aside class="sidebar">
       <div class="sidebar-brand">
-        <img src="img/logo.png" alt="Logo" />
+        <div class="brand-logo">
+          <img src="data:image/png;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1BST0ZJTEUAAQEAAAHIAAAAAAQwAABtbnRyUkdCIFhZWiAH4AABAAEAAAAAAABhY3NwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAA9tYAAQAAAADTLQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAlkZXNjAAAA8AAAACRyWFlaAAABFAAAABRnWFlaAAABKAAAABRiWFlaAAABPAAAABR3dHB0AAABUAAAABRyVFJDAAABZAAAAChnVFJDAAABZAAAAChiVFJDAAABZAAAAChjcHJ0AAABjAAAADxtbHVjAAAAAAAAAAEAAAAMZW5VUwAAAAgAAAAcAHMAUgBHAEJYWVogAAAAAAAAb6IAADj1AAADkFhZWiAAAAAAAABimQAAt4UAABjaWFlaIAAAAAAAACSgAAAPhAAAts9YWVogAAAAAAAA9tYAAQAAAADTLXBhcmEAAAAAAAQAAAACZmYAAPKnAAANWQAAE9AAAApbAAAAAAAAAABtbHVjAAAAAAAAAAEAAAAMZW5VUwAAACAAAAAcAEcAbwBvAGcAbABlACAASQBuAGMALgAgADIAMAAxADb/2wBDAAUDBAQEAwUEBAQFBQUGBwwIBwcHBw8LCwkMEQ8SEhEPERETFhwXExQaFRERGCEYGh0dHx8fExciJCIeJBweHx7/2wBDAQUFBQcGBw4ICA4eFBEUHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh7/wAARCADhAOEDASIAAhEBAxEB/8QAHAABAAIDAQEBAAAAAAAAAAAAAAcIBAUGAgMB/8QASRAAAgEDAgIGBQcGCwkAAAAAAAECAwQFBhEHIRITMUFRcQgiYYGRFFJioaKywSMyNkJ0sTNTVHKCkpSjwtHSFzQ1Q1Zjs/Dx/8QAGwEBAAMBAQEBAAAAAAAAAAAAAAQFBgcDAQL/xAA4EQACAQMBBAYIBgEFAAAAAAAAAQIDBBEFBiExcRJBUYGh0RMUMjNhkbHwFSIjNMHhchYkQlJT/9oADAMBAAIRAxEAPwC5YAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAKm+k7xQ1/pnitc4XT2p7nH4+laUKkaFOhRaUpRbb3lByfxOBw3pB8WcdWU6mpaeSguyleWNFx97hGMvtGiobM3VejGtCUcNZxl5+hX1NSo05uEs7i+AIB4SekphtR39DDausqeDv68lCjdU5uVpUk+xNvnSb7t914yXJOfinu7KvZz6FaOGS6VaFaPSg8gAEU9QAADVatzCwGnLzMO3dx8mgn1Sl0ek3JJc9nt2kXS41Xn6unbded43/gJA4qJPh7md/5Pv9pFaDXbPaba3VCU60MtPHF9i7GU2pXVWjUSg8LBKv8AtpyH/T9r/apf6T1T403u/wCU09btbfq3T/0kUAv/AMC0/wD8/F+ZXfiFz/28F5FrNMZWObwFnlYU+qVzT6fQ33257fgbE5fhPuuHmH3/AIqX35HUHOrunGnXnCPBNrxNNRk5U4yfWkAARz0AAAAAAAAAAAAAAAAAAAAAKM+l9Lpccsmt16lrbR/u0/xIiJX9LWXS47Ztb79GlbL+4gRQdc0pYsqX+K+hkL338+YaTWz5ou76Ims7vVPDSWOydepcX+ErfJXVqPeVSi10qTb72l0oeL6Cb3bZSItF6CFlkaa1VkaltcQx1zG1hQrSptU6s4Ot0uhLsk47pPbs3RXbTUoTsJSlxi0188fQk6VOSr4XBloQDxWq0qNN1K1SFOC7ZTkkl72c0SyaY9g53Ja40lj0+vz1lJrtjRn1svhDc47UHGPH0oSp4PHVrqr2Krcfk6a9uy9Z+Xq+ZPoaXd13iFN83uXzZHqXdGn7Ukbjjhl6OP0VVsHNfKchONKnHfn0VJSm/LZbeckV9Nhn8zks9kp5DKXMq9eS2XdGEe6MV3L/AO9przoOk6f6hb+jby3vfMzd5c+sVOkuAABZkUsNozPYTA8PcK8pkre13tlKMZS3nLm+yK5v3Ixb3i7pShNxo08jdrulSoJJ/wBeSf1EBgz3+m7aVSVSpJttt9i3/faWX4pVUVGKSwTguM2Ab54nLJfzae/3zaY3irpG7ko1bi6sm+z5RQe3xj0kivYPs9mrGSwsrv8AM+R1Sunvwy2mNyNhkrf5Rj7y3u6Xz6NRSS+BklTMZkL7GXcbvHXda0rx7J0puL8n4r2PkS7oLitC5qU8fqfq6NWXqwvYrowk/pr9XzXLyKC/2brW6c6L6S8f7+9xY2+qU6j6M9z8CVgE1JJppp800DNloAAAAAAAAAAAAAAAUK9Kebnx71Nz3UZW0V/ZaRxuidJ6g1nm4YfTmNq3t1LZza5U6Md/z6knyjH2vt7Fu9kSdxQ0dmOIHpTai09h4xVSpXoyrV5reFvRjb0VKpLbtS3SS720u/cthw80Xpzh1paOKw9KFChTj1l1d1WlUryS9apUl/6kuS2R0KvrMNPsqMILM3GOF2blvfkZ+Fi7ivOUt0csjXhT6N+ltNxpZDVbp6jyq2l1dSO1nSfgqb/hPOfJ8toxJH1VrrTmlofI5VFXuaUVGNnapNwSXJPuh3cnz27ER9xF4oXN9OrjNN1Z29mt41LtcqlX+Z82Pt7X7O+MHzbb7W92Q7fR7i/kq+oTfwj98OSP3Vv6dBejt13/AHxO91DxW1LknOnYdTiqD7FSXTqbe2b/AASOIvru7v63XX91Xu6nz69RzfxZ8AaS3s6FssUoJffbxKurXqVXmbyAASTyAAAAAAABmYzF5PKVHTxuPuryS7eppOe3m12e8+SkorMnhBJt4Rhg31fRuq6MOnU09kdvo0XL925pK1KpRqypVqc6dSL2lGcdmn7UfinWp1PYknyeT9ShKPtLB4AB6H5JS4Na5nZ3FHTeXrb2tR9Czqzf8FLug38193g+XY+U1lQ/LkWO4T6jlqLSlKdxU6d7avqLhvtk0vVl719aZidpNMjTfrVNbnx59vf1l9pd05fpS6uB1wAMkXAAAAAAAAAAAABzumNJY7B6g1DnqMFPI527jXuazXNQhTjTp00/mpRcvOcvYRbxj1vPK3tTAYuttjqEujcTi/8AeKifZv8ANT+L59yJB4v6klp/SsoW1Rwvr5uhQcXs4Lb15ryXLfuckV1SSSSWyRsdnbB1n63W343R7t2e7gil1O56H6MO8AA2RRgH6SdovhNeZCjTvdQV6lhRmt421NLrmvpN8oeWzfkRbu9oWkOnWlj+T1o0KlaWILJGB6pRlVqdXSjKpP5sFu/giymK0DpDHRXVYO1rzX69zHrnv4+vul7tjora3t7amqdvQpUYLsjTgor4IztXaukvd02+bx5lnDR5v2pY++4rPbaM1RXsKt+sNcUbajTlUnUr7Utopbt7Sab5LuRz5ZviXUdPQGblF7N2c4/FbfiVkLTRtRqX9OVSaSw8LBEvraNvJRi8gAFwQjtuFGjY6oylSvfKSxlo11qT2dWT7IJ9y7213ee5YGxtLWxtYWtlb0rehTW0KdOKjFe5HK8HMfGw4f2DUUqlz0rio/FyfJ/1VH4HYHNdbvp3N1KOfyxeEuXX3mosLeNKknjewaHWOlMTqewlQvqEY11H8jcxj+Upvz717Hy/eb4FVSqzozU6bw0TJwjNdGSyip+cxt1h8vc4y9j0a9vNwlt2Pwa9jWzXmYRJ/pDY+NDUGOyUI7fK7eVOe3fKm1z89ppe4jA6np9z61bQrdq8eD8TI3NL0NWUOwEi8AslK11dWx7k+rvbd+r4zh6yfw6fxI6Og4cXTtNd4asntvdRpvyn6v8AiPmpUVWtKkPg/NH21n0K0ZfEs6ADlJrwAAAAAAAAAAACAeO+Tle62+RKX5OwoRppfTkunJ/BxXuOAN9xEqSra7zc59vyycfdF9FfUkaE6vp1JUrWnBdi/sx9zNzrSb7QACYeJIfArAUspqWtkrqmp0MbGM4Ra5OrJvov3JSfn0WT0Rf6O0ILT2TqLbpu8UX5KEdv3slA5vtBWlVvpJ8I4S+XmajTaajbprrAAKQnHOcTY9Lh/m14Wk38OZWUszxPqRpcPs3Kb2TtZQXnLkvrZWY3eyv7af8Al/CM/q/vY8gH2AS7GagqS1Gj6SoaTxFFLboWVFfYRtTHxlPqcba0fmUYR+CSMg5BVl0qkpdrNpBYikAAeZ+iKvSLpp4nEVducbicd/OO/wCBC5NXpFS2wuJh3u6k/hB/5kKnSNnf2EO/6szGp/uH3fQGZg6nU5zH1v4u6pT+E0zDPdCTjXpyXappr4lzNdKLRBi8NMt0ADjxtQAAAAAAAAAAACruvf03zf7fW++zSG717+m+b/b6332aQ65a+4hyX0MbW95LmwAD3PMkrgJnqWPztxhrmahTyEU6Lb5dbHf1f6Sb98Uu8nMqJCUoTjOEpRlFpxlF7NNdjT7mS9ofi1Sjb07LVEainFKKvaUOkpL6cVz39sU9/BGQ1/Rqtap6xQWc8V180XOnX0IR9FUeOxkug0dvrDStel1tPUWM6P0rmMWvNNpo57VPFLTuMoThjKqyt3t6saW/VJ+Mp9m383d+Rl6Wn3VWfQjTeeRbzuaUF0nJGBx+zdO209RwVOa6+9qRqVIrtVKD3398lH4Mg4zs7lb7N5StksjWdW4rPdvsUV3Riu5Lw/EwTo+l2PqNsqXXxfMzF3cenqufV1AycXbu8ydpaRW8q9eFJL2ykl+JjHXcIcZLJ69sN470rRu5qPw6P5v2nEk3VZUaM6j6k2eVKHTqKPayx65LYAHIzZAAAES+kbPa2wkN+2dZ/BQ/zIcJc9I5vrsDHu6Nw/8AxERnStn1jT6ff9WZbUn/ALmXd9ED3Qj0q9OPjNL6zwZGOj08jbQ+dWgvtIuJPCbIa4ltQAcdNqAAAAAAAAAAAAVd17+m+b/b6332aQ3evf03zf7fW++zSHXLX3EOS+hja3vJc2AAe55gAAAAAAAAAnvgjpqeHwE8pd0+jd5DaUYtc4Ul+avN7t/DwOW4V8Oat5Vo5vP0HTtI7Tt7Wa9as+6Ul3R9nf5ds1mM2i1aM16rRee1/wAeZeaZZuL9LNcvMAAx5dAAAESekbSboYSttyjOtF+bUGv3Mh0sDxzxk77Q8rmnFynY1413sufR5xl97f3FfjouzdVTsYxX/FteOf5MzqkHG4b7cAzcFHp5ywi++6pL7aMIztP/APH8dv8Ayul99F3V9h8iDD2kWvABx82gAAAAAAAAAAABV3Xv6b5v9vrffZpCUtQcL9T5XU+Sv41MbSoXN5VqU3KvLfoOTcW0o9u23LxNjheDNGFSNTMZiVWKfOlbU+jv/Se/7jpFPWrKjQj0p78Lct/UZiVjXnUeI9ZHeh9L32qcxCztoyhbwadzcberSh/qfcvwTJs1Nw407mMfRt6NH5BcW9KNKjcUUt+ilslNfr+/n7TpsPi8fh7CFjjLWnbW8OyEF2vxb7W/a+ZmGU1DXa9xXU6TcVHh/flwLe20+nSpuM97fErrqPhrqnETlKlZvJW67Klp60tvbD874J+ZyFxRq29V0rilUo1F2xqRcWvcy3J8ri3t7iHQuKFKtHwqQUl9ZOt9qqsVitBP4rd5keppEG8wljxKjnqnGVSahTjKcn2KK3bLUPT2Acuk8HjG/H5LD/IzLWys7VbWtpQoL/t01H9xKltZDH5aT+f9HktHl1z8CuOB0DqrMTj1OLqW1F/867TpRS8dn6z9yZK+ieGGIwdSF7kZrJ30ecXOO1Km/ox737X7kjvgU17r91dJxT6Mfh5k6hp1Gk88X8QACjJ4AAAAAB87mhSubarbXFONSjVg4VISXKUWtmn7iumv9DZPTN9VqUqFW5xbe9K4jHpdFfNnt2NePY/qVjw+a2ZZ6ZqlXT5txWU+KIl1aQuY4e5rrKhbrxRk4ubhk7SaXSca8Gku/wBZFo7jA4O4m518NjqsnzbnbQb+tH5QwGCoVoVqGFx1KpTfShOFrBOL8U0uRontXSccejfzK1aRJP2jZAAxRegAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAH//Z" alt="IDN Logo" />
+        </div>
         <span>Monitoring<strong>IoT</strong></span>
       </div>
+
       <nav class="sidebar-nav">
         <a href="dashboard.html" class="active">📊 Dashboard</a>
         <a href="#">🌡 Sensor</a>
         <a href="#">📈 Riwayat</a>
         <a href="#">⚙ Pengaturan</a>
-        <a href="#" id="logoutBtn" class="logout">↩ Keluar</a>
       </nav>
+
+      <div class="sidebar-footer">
+        <a href="login.html" id="logoutBtn">↩ Keluar</a>
+      </div>
     </aside>
 
-    <!-- Main -->
+    <!-- ── MAIN ── -->
     <main class="main">
+
+      <!-- Topbar -->
       <header class="topbar">
         <div>
           <h1>Dashboard Monitoring</h1>
-          <p class="muted">Selamat datang kembali, pantau perangkat Anda di sini.</p>
+          <p>Selamat datang kembali, pantau perangkat Anda di sini.</p>
         </div>
         <div class="topbar-actions">
-          <div class="status-pill"><span class="dot online"></span> Terhubung</div>
+          <div class="status-pill">
+            <span class="dot online"></span> Terhubung
+          </div>
           <div class="avatar">U</div>
         </div>
       </header>
 
-      <!-- Stats: hanya Suhu & Cahaya -->
-      <section class="stats-grid" style="grid-template-columns: repeat(2, 1fr);">
-        <div class="stat-card gradient-1">
-          <small>🌡 Suhu</small>
-          <h2 id="statSuhu">--°C</h2>
-          <span class="trend up" id="trendSuhu">↑ Memuat...</span>
-        </div>
-        <div class="stat-card gradient-4">
-          <small>☀️ Cahaya</small>
-          <h2 id="statCahaya">-- lx</h2>
-          <span class="trend up" id="trendCahaya">↑ Memuat...</span>
-        </div>
-      </section>
+      <div class="content">
 
-      <!-- Chart + Table -->
-      <section class="dashboard-grid">
+        <!-- Stat Cards -->
+        <div class="stats-grid">
+          <div class="stat-card grad-blue">
+            <small>🌡 Suhu</small>
+            <h2 id="statSuhu">--°C</h2>
+            <span class="trend neutral" id="trendSuhu">Memuat...</span>
+          </div>
+          <div class="stat-card grad-purple">
+            <small>☀️ Cahaya</small>
+            <h2 id="statCahaya">-- lx</h2>
+            <span class="trend neutral" id="trendCahaya">Memuat...</span>
+          </div>
+        </div>
+
+        <!-- Chart + Activity -->
+        <div class="dashboard-grid">
+
+          <!-- Chart -->
+          <div class="panel chart-panel">
+            <div class="panel-header">
+              <h3>📊 Grafik Sensor</h3>
+              <select id="rangeSelect">
+                <option>24 Jam Terakhir</option>
+                <option>7 Hari</option>
+                <option>30 Hari</option>
+              </select>
+            </div>
+            <div class="panel-body">
+              <canvas id="sensorChart" height="130"></canvas>
+            </div>
+          </div>
+
+          <!-- Activity -->
+          <div class="panel">
+            <div class="panel-header">
+              <h3>🕐 Aktivitas Terbaru</h3>
+            </div>
+            <ul class="activity-list" id="activityList">
+              <li><span class="dot online"></span> Sensor A terhubung <small>2 mnt lalu</small></li>
+              <li><span class="dot warn"></span> Suhu naik di Ruang 1 <small>10 mnt lalu</small></li>
+              <li><span class="dot online"></span> Sinkronisasi berhasil <small>15 mnt lalu</small></li>
+              <li><span class="dot off"></span> Sensor B offline <small>1 jam lalu</small></li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- Relay Control -->
         <div class="panel">
           <div class="panel-header">
-            <h3>Grafik Sensor</h3>
-            <select id="rangeSelect">
-              <option>24 Jam Terakhir</option>
-              <option>7 Hari</option>
-              <option>30 Hari</option>
-            </select>
+            <h3>⚡ Kontrol Relay</h3>
+            <span class="muted" style="font-size:0.78rem">Klik toggle untuk nyalakan / matikan perangkat</span>
           </div>
-          <canvas id="sensorChart" height="120"></canvas>
+          <div class="relay-row">
+            <div class="relay-info">
+              <strong>Relay 1</strong>
+              <span>Perangkat / Lampu</span>
+            </div>
+            <span id="relayLabel" class="relay-label off">OFF</span>
+            <label class="relay-switch" title="Toggle Relay 1">
+              <input type="checkbox" id="relayToggle" />
+              <span class="relay-slider"></span>
+            </label>
+          </div>
+          <div class="relay-status-bar" id="relayStatus">Status: Memuat...</div>
         </div>
 
+        <!-- Data Table -->
         <div class="panel">
           <div class="panel-header">
-            <h3>Aktivitas Terbaru</h3>
+            <h3>📋 Data Sensor</h3>
           </div>
-          <ul class="activity-list" id="activityList">
-            <li><span class="dot online"></span> Sensor A terhubung <small>2 mnt lalu</small></li>
-            <li><span class="dot warn"></span> Suhu naik di Ruang 1 <small>10 mnt lalu</small></li>
-            <li><span class="dot online"></span> Sinkronisasi data berhasil <small>15 mnt lalu</small></li>
-            <li><span class="dot off"></span> Sensor B offline <small>1 jam lalu</small></li>
-          </ul>
-        </div>
-      </section>
-
-      <!-- Relay Control -->
-      <section class="panel">
-        <div class="panel-header">
-          <h3>⚡ Kontrol Relay</h3>
-          <span class="muted" style="font-size:0.82rem">Klik toggle untuk nyalakan/matikan perangkat</span>
-        </div>
-        <div style="display:flex;align-items:center;gap:20px;padding:16px 0;">
-          <div style="flex:1">
-            <div style="font-weight:600;font-size:1rem;">Relay 1</div>
-            <div class="muted" style="font-size:0.83rem;margin-top:2px;">Perangkat / Lampu</div>
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Waktu</th>
+                  <th>Sensor</th>
+                  <th>Nilai</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody id="dataTable"></tbody>
+            </table>
           </div>
-          <span id="relayLabel" style="font-size:0.9rem;color:var(--muted);min-width:40px;">OFF</span>
-          <label class="relay-switch" title="Toggle Relay 1">
-            <input type="checkbox" id="relayToggle" />
-            <span class="relay-slider"></span>
-          </label>
         </div>
-        <div id="relayStatus" style="font-size:0.82rem;color:var(--muted);padding-bottom:4px;">Status: Memuat...</div>
-      </section>
 
-      <!-- Tabel Data -->
-      <section class="panel">
-        <div class="panel-header">
-          <h3>Data Sensor</h3>
-        </div>
-        <div class="table-wrap">
-          <table class="data-table">
-            <thead>
-              <tr><th>Waktu</th><th>Sensor</th><th>Nilai</th><th>Status</th></tr>
-            </thead>
-            <tbody id="dataTable"></tbody>
-          </table>
-        </div>
-      </section>
+      </div><!-- /content -->
     </main>
   </div>
 
-  <!-- dashboard.js harus dimuat sebagai module SEBELUM sensorChart.js -->
+  <script>
+    // Relay toggle UI
+    const toggle = document.getElementById('relayToggle');
+    const relayLabel = document.getElementById('relayLabel');
+    const relayStatus = document.getElementById('relayStatus');
+
+    toggle.addEventListener('change', () => {
+      const on = toggle.checked;
+      relayLabel.textContent = on ? 'ON' : 'OFF';
+      relayLabel.className = 'relay-label ' + (on ? 'on' : 'off');
+      relayStatus.textContent = 'Status: ' + (on ? '✅ Aktif' : '🔴 Mati');
+    });
+    relayStatus.textContent = 'Status: 🔴 Mati';
+
+    // Chart.js
+    window.addEventListener('load', () => {
+      const ctx = document.getElementById('sensorChart').getContext('2d');
+      const labels = ['00:00','03:00','06:00','09:00','12:00','15:00','18:00','21:00'];
+      new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels,
+          datasets: [
+            {
+              label: 'Suhu (°C)',
+              data: [27,27.5,28,27.8,27.2,27.6,28.1,27.9],
+              borderColor: '#38bdf8',
+              backgroundColor: 'rgba(56,189,248,0.08)',
+              pointBackgroundColor: '#38bdf8',
+              pointRadius: 4,
+              tension: 0.4,
+              fill: true,
+            },
+            {
+              label: 'Cahaya (lx)',
+              data: [120,200,450,800,950,870,600,300],
+              borderColor: '#a78bfa',
+              backgroundColor: 'rgba(167,139,250,0.06)',
+              pointBackgroundColor: '#a78bfa',
+              pointRadius: 4,
+              tension: 0.4,
+              fill: true,
+              yAxisID: 'y2',
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          interaction: { mode: 'index', intersect: false },
+          plugins: {
+            legend: {
+              labels: {
+                color: '#94a3b8',
+                font: { family: 'Poppins', size: 11 },
+                boxWidth: 10,
+                padding: 16,
+              }
+            },
+            tooltip: {
+              backgroundColor: '#111827',
+              borderColor: 'rgba(56,189,248,0.2)',
+              borderWidth: 1,
+              titleColor: '#f1f5f9',
+              bodyColor: '#94a3b8',
+              padding: 10,
+            }
+          },
+          scales: {
+            x: {
+              ticks: { color: '#64748b', font: { family: 'Poppins', size: 10 } },
+              grid: { color: 'rgba(255,255,255,0.04)' },
+            },
+            y: {
+              ticks: { color: '#64748b', font: { family: 'Poppins', size: 10 } },
+              grid: { color: 'rgba(255,255,255,0.04)' },
+            },
+            y2: {
+              position: 'right',
+              ticks: { color: '#64748b', font: { family: 'Poppins', size: 10 } },
+              grid: { drawOnChartArea: false },
+            }
+          }
+        }
+      });
+    });
+  </script>
+
+  <!-- Hubungkan ke Firebase / dashboard.js kamu -->
   <script type="module" src="js/dashboard.js"></script>
-  <!-- sensorChart.js dimuat setelah dashboard.js agar window.__sensorData sudah tersedia -->
-  <script src="js/sensorChart.js"></script>
 </body>
 </html>
