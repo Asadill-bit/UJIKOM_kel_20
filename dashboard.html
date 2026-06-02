@@ -601,20 +601,52 @@
         <div class="panel">
           <div class="panel-header">
             <h3>⚡ Kontrol Relay</h3>
-            <span class="muted" style="font-size:0.78rem">Klik toggle untuk nyalakan / matikan perangkat</span>
+            <span class="muted" style="font-size:0.78rem">Gunakan Auto untuk sensor-driven control dan toggle untuk manual.</span>
           </div>
           <div class="relay-row">
             <div class="relay-info">
               <strong>Relay 1</strong>
               <span>Perangkat / Lampu</span>
             </div>
-            <span id="relayLabel" class="relay-label off">OFF</span>
+            <span id="relay1Label" class="relay-label off">OFF</span>
             <label class="relay-switch" title="Toggle Relay 1">
-              <input type="checkbox" id="relayToggle" />
+              <input type="checkbox" id="relay1Toggle" />
               <span class="relay-slider"></span>
             </label>
           </div>
-          <div class="relay-status-bar" id="relayStatus">Status: Memuat...</div>
+          <div class="relay-row">
+            <div class="relay-info">
+              <strong>Auto Lamp</strong>
+              <span id="lampModeText">Mode: Manual</span>
+            </div>
+            <label class="switch" title="Otomatisasi Lampu">
+              <input type="checkbox" id="autoLampToggle" />
+              <span class="slider"></span>
+            </label>
+          </div>
+          <div class="relay-status-bar" id="relay1Status">Status: Memuat...</div>
+          <div class="relay-row">
+            <div class="relay-info">
+              <strong>Relay 2</strong>
+              <span>Kipas / Fan</span>
+            </div>
+            <span id="relay2Label" class="relay-label off">OFF</span>
+            <label class="relay-switch" title="Toggle Relay 2">
+              <input type="checkbox" id="relay2Toggle" />
+              <span class="relay-slider"></span>
+            </label>
+          </div>
+          <div class="relay-row">
+            <div class="relay-info">
+              <strong>Auto Fan</strong>
+              <span id="fanModeText">Mode: Manual</span>
+            </div>
+            <label class="switch" title="Otomatisasi Kipas">
+              <input type="checkbox" id="autoFanToggle" />
+              <span class="slider"></span>
+            </label>
+          </div>
+          <div class="relay-status-bar" id="relay2Status">Status: Memuat...</div>
         </div>
 
         <!-- Data Table -->
@@ -642,19 +674,6 @@
   </div>
 
   <script>
-    // Relay toggle UI
-    const toggle = document.getElementById('relayToggle');
-    const relayLabel = document.getElementById('relayLabel');
-    const relayStatus = document.getElementById('relayStatus');
-
-    toggle.addEventListener('change', () => {
-      const on = toggle.checked;
-      relayLabel.textContent = on ? 'ON' : 'OFF';
-      relayLabel.className = 'relay-label ' + (on ? 'on' : 'off');
-      relayStatus.textContent = 'Status: ' + (on ? '✅ Aktif' : '🔴 Mati');
-    });
-    relayStatus.textContent = 'Status: 🔴 Mati';
-
     // Chart.js
     window.addEventListener('load', () => {
       const ctx = document.getElementById('sensorChart').getContext('2d');

@@ -36,6 +36,7 @@ onValue(sensorRef, (snapshot) => {
   updateTable(data.history || []);
   // Teruskan ke chart
   window.__sensorData = data;
+  applyAutomation(data);
   if (window.renderChart) window.renderChart(data.chart);
 }, () => loadDummy());
 
@@ -89,66 +90,170 @@ async function loadDummy() {
 // ====================================
 // RELAY CONTROL
 // ====================================
-const relayRef = ref(db, 'relay/1');
-const relayToggle = document.getElementById('relayToggle');
-const relayLabel  = document.getElementById('relayLabel');
-const relayStatus = document.getElementById('relayStatus');
+const relay1Ref = ref(db, 'relay/1');
+const relay2Ref = ref(db, 'relay/2');
+const autoLampRef = ref(db, 'automation/lamp');
+const autoFanRef = ref(db, 'automation/fan');
+
+const relay1Toggle = document.getElementById('relay1Toggle');
+const relay1Label = document.getElementById('relay1Label');
+const relay1Status = document.getElementById('relay1Status');
+const autoLampToggle = document.getElementById('autoLampToggle');
+const lampModeText = document.getElementById('lampModeText');
+
+const relay2Toggle = document.getElementById('relay2Toggle');
+const relay2Label = document.getElementById('relay2Label');
+const relay2Status = document.getElementById('relay2Status');
+const autoFanToggle = document.getElementById('autoFanToggle');
+const fanModeText = document.getElementById('fanModeText');
+
+let autoLampEnabled = false;
+let autoFanEnabled = false;
+
+function normalizeRelayValue(value) {
+  return value === 1 || value === true || value === '1' || value === 'true';
+}
+
+function updateRelayUI(toggle, label, statusEl, on) {
+  if (toggle) toggle.checked = on;
+  if (label) {
+    label.textContent = on ? 'ON' : 'OFF';
+    label.className = 'relay-label ' + (on ? 'on' : 'off');
+  }
+  if (statusEl) {
+    statusEl.textContent = 'Status: ' + (on ? '🟢 Menyala — perangkat aktif' : '🔴 Mati — perangkat non-aktif');
+  }
+}
+
+function updateModeText(statusEl, enabled) {
+  if (statusEl) {
+    statusEl.textContent = enabled ? 'Mode: Automatic' : 'Mode: Manual';
+  }
+}
+
+async function logRelayHistory(deviceName, valueText, mode) {
+  try {
+    const historyRef = ref(db, 'sensor/history');
+    const historySnapshot = await get(historyRef);
+    let history = historySnapshot.val() || [];
+    if (!Array.isArray(history)) {
+      history = history ? Object.values(history) : [];
+    }
+
+    const now = new Date();
+    const timeStr = now.toTimeString().split(' ')[0];
+    const dateStr = now.toISOString().split('T')[0];
+
+    history.push({
+      waktu: timeStr,
+      tanggal: dateStr,
+      sensor: deviceName,
+      nilai: valueText,
+      status: `OK (${mode})`
+    });
+
+    if (history.length > 50) {
+      history = history.slice(-50);
+    }
+
+    await set(historyRef, history);
+  } catch (err) {
+    console.error('Gagal mencatat riwayat relay:', err);
+  }
+}
+
+async function writeRelayState(relayRef, state, deviceName, mode) {
+  try {
+    await set(relayRef, state);
+    await logRelayHistory(deviceName, state === 1 ? 'ON' : 'OFF', mode);
+    console.log(`${deviceName} set to ${state} (${mode})`);
+  } catch (err) {
+    console.error(`Gagal mengubah ${deviceName}:`, err);
+  }
+}
+
+function maybeApplyLampAutomation(data) {
+  if (!autoLampEnabled || !data) return;
+  const light = Number(data.cahaya);
+  if (Number.isNaN(light)) return;
+  const currentOn = relay1Toggle?.checked;
+  if (light <= 150 && !currentOn) {
+    writeRelayState(relay1Ref, 1, 'Relay 1', 'Automatic');
+  } else if (light >= 250 && currentOn) {
+    writeRelayState(relay1Ref, 0, 'Relay 1', 'Automatic');
+  }
+}
+
+function maybeApplyFanAutomation(data) {
+  if (!autoFanEnabled || !data) return;
+  const temp = Number(data.suhu);
+  if (Number.isNaN(temp)) return;
+  const currentOn = relay2Toggle?.checked;
+  if (temp >= 30 && !currentOn) {
+    writeRelayState(relay2Ref, 1, 'Relay 2', 'Automatic');
+  } else if (temp <= 28 && currentOn) {
+    writeRelayState(relay2Ref, 0, 'Relay 2', 'Automatic');
+  }
+}
+
+function applyAutomation(data) {
+  maybeApplyLampAutomation(data);
+  maybeApplyFanAutomation(data);
+}
 
 // Dengarkan perubahan relay dari Firebase (realtime)
-onValue(relayRef, (snapshot) => {
-  const val = snapshot.val();
-  const isOn = val === 1 || val === true || val === '1';
-
-  if (relayToggle) relayToggle.checked = isOn;
-  if (relayLabel)  relayLabel.textContent = isOn ? 'ON' : 'OFF';
-  if (relayLabel)  relayLabel.style.color = isOn ? '#10b981' : 'var(--muted)';
-  if (relayStatus) relayStatus.textContent =
-    'Status: ' + (isOn ? '🟢 Menyala — perangkat aktif' : '🔴 Mati — perangkat non-aktif');
+onValue(relay1Ref, (snapshot) => {
+  const isOn = normalizeRelayValue(snapshot.val());
+  updateRelayUI(relay1Toggle, relay1Label, relay1Status, isOn);
 });
 
-// Ketika toggle diklik → tulis ke Firebase & simpan ke riwayat
-if (relayToggle) {
-  relayToggle.addEventListener('change', async () => {
-    const newState = relayToggle.checked ? 1 : 0;
-    const labelState = newState === 1 ? 'ON' : 'OFF';
-    try {
-      // 1. Update status relay
-      await set(relayRef, newState);
-      console.log('Relay 1 set to:', newState);
+onValue(relay2Ref, (snapshot) => {
+  const isOn = normalizeRelayValue(snapshot.val());
+  updateRelayUI(relay2Toggle, relay2Label, relay2Status, isOn);
+});
 
-      // 2. Tambahkan log ke history sensor di Firebase
-      const historyRef = ref(db, 'sensor/history');
-      const historySnapshot = await get(historyRef);
-      let history = historySnapshot.val() || [];
-      if (!Array.isArray(history)) {
-        history = history ? Object.values(history) : [];
-      }
+onValue(autoLampRef, (snapshot) => {
+  autoLampEnabled = normalizeRelayValue(snapshot.val());
+  if (autoLampToggle) autoLampToggle.checked = autoLampEnabled;
+  updateModeText(lampModeText, autoLampEnabled);
+  maybeApplyLampAutomation(window.__sensorData);
+});
 
-      const now = new Date();
-      // Format jam: menit: detik lokal
-      const timeStr = now.toTimeString().split(' ')[0];
-      // Format tanggal: YYYY-MM-DD
-      const dateStr = now.toISOString().split('T')[0];
+onValue(autoFanRef, (snapshot) => {
+  autoFanEnabled = normalizeRelayValue(snapshot.val());
+  if (autoFanToggle) autoFanToggle.checked = autoFanEnabled;
+  updateModeText(fanModeText, autoFanEnabled);
+  maybeApplyFanAutomation(window.__sensorData);
+});
 
-      history.push({
-        waktu: timeStr,
-        tanggal: dateStr,
-        sensor: 'Relay 1',
-        nilai: labelState,
-        status: 'OK'
-      });
+if (relay1Toggle) {
+  relay1Toggle.addEventListener('change', async () => {
+    const newState = relay1Toggle.checked ? 1 : 0;
+    await writeRelayState(relay1Ref, newState, 'Relay 1', autoLampEnabled ? 'Automatic' : 'Manual');
+  });
+}
 
-      // Batasi history maksimal 50 baris
-      if (history.length > 50) {
-        history = history.slice(-50);
-      }
+if (relay2Toggle) {
+  relay2Toggle.addEventListener('change', async () => {
+    const newState = relay2Toggle.checked ? 1 : 0;
+    await writeRelayState(relay2Ref, newState, 'Relay 2', autoFanEnabled ? 'Automatic' : 'Manual');
+  });
+}
 
-      await set(historyRef, history);
+if (autoLampToggle) {
+  autoLampToggle.addEventListener('change', async () => {
+    autoLampEnabled = autoLampToggle.checked;
+    updateModeText(lampModeText, autoLampEnabled);
+    await set(autoLampRef, autoLampEnabled ? 1 : 0);
+    if (autoLampEnabled) maybeApplyLampAutomation(window.__sensorData);
+  });
+}
 
-    } catch (err) {
-      console.error('Gagal mengubah relay atau mencatat riwayat:', err);
-      // Kembalikan toggle jika gagal
-      relayToggle.checked = !relayToggle.checked;
-    }
+if (autoFanToggle) {
+  autoFanToggle.addEventListener('change', async () => {
+    autoFanEnabled = autoFanToggle.checked;
+    updateModeText(fanModeText, autoFanEnabled);
+    await set(autoFanRef, autoFanEnabled ? 1 : 0);
+    if (autoFanEnabled) maybeApplyFanAutomation(window.__sensorData);
   });
 }
