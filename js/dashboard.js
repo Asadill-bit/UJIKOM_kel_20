@@ -13,6 +13,14 @@ document.getElementById('logoutBtn')?.addEventListener('click', async (e) => {
   window.location.href = 'login.html';
 });
 
+function highlightActiveSidebar() {
+  const currentPage = window.location.pathname.split('/').pop() || 'dashboard.html';
+  const link = document.querySelector(`.sidebar-nav a[href="${currentPage}"]`);
+  if (link) link.classList.add('active');
+}
+
+highlightActiveSidebar();
+
 // ====================================
 // SENSOR DATA — hanya Suhu & Cahaya
 // ====================================

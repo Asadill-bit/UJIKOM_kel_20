@@ -14,7 +14,7 @@
     <!-- Sidebar -->
     <aside class="sidebar">
       <div class="sidebar-brand">
-        <img src="img/logo.png" alt="Logo" />
+        <div class="brand-logo"><img src="img/logo.png" alt="Logo" /></div>
         <span>Monitoring<strong>IoT</strong></span>
       </div>
       <nav class="sidebar-nav">
@@ -40,17 +40,17 @@
       </header>
 
       <!-- Filter -->
-      <section class="panel" style="padding: 16px 20px;">
+      <section class="panel">
         <div class="panel-header" style="flex-wrap:wrap;gap:12px;">
           <h3>Filter Data</h3>
-          <div style="display:flex;gap:10px;flex-wrap:wrap;">
-            <select id="filterSensor" style="padding:6px 12px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text)">
+          <div class="filter-group">
+            <select id="filterSensor">
               <option value="all">Semua Sensor</option>
               <option value="dht22">DHT22 (Suhu/Kelembapan)</option>
               <option value="bmp280">BMP280 (Tekanan)</option>
               <option value="ldr">LDR (Cahaya)</option>
             </select>
-            <select id="filterRange" style="padding:6px 12px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text)">
+            <select id="filterRange">
               <option>24 Jam Terakhir</option>
               <option>7 Hari</option>
               <option>30 Hari</option>
