@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Data Sensor | Monitoring IoT</title>
+  <meta name="description" content="Halaman monitoring data sensor realtime dari semua perangkat IoT yang terhubung." />
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="css/dashboard.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-brand">
+        <img src="img/logo.png" alt="Logo" />
+        <span>Monitoring<strong>IoT</strong></span>
+      </div>
+      <nav class="sidebar-nav">
+        <a href="dashboard.html" id="nav-dashboard">📊 Dashboard</a>
+        <a href="sensor.html" id="nav-sensor" class="active">🌡 Sensor</a>
+        <a href="riwayat.html" id="nav-riwayat">📈 Riwayat</a>
+        <a href="pengaturan.html" id="nav-pengaturan">⚙ Pengaturan</a>
+        <a href="#" id="logoutBtn" class="logout">↩ Keluar</a>
+      </nav>
+    </aside>
+
+    <!-- Main -->
+    <main class="main">
+      <header class="topbar">
+        <div>
+          <h1>Data Sensor</h1>
+          <p class="muted">Pantau semua sensor IoT yang terhubung secara realtime.</p>
+        </div>
+        <div class="topbar-actions">
+          <div class="status-pill"><span class="dot online"></span> Terhubung</div>
+          <div class="avatar">U</div>
+        </div>
+      </header>
+
+      <!-- Sensor Cards Grid -->
+      <section class="stats-grid">
+        <div class="stat-card gradient-1">
+          <small>Suhu</small>
+          <h2 id="statSuhu">--°C</h2>
+          <span class="trend up">↑ Stabil</span>
+        </div>
+        <div class="stat-card gradient-2">
+          <small>Kelembapan</small>
+          <h2 id="statKelembapan">--%</h2>
+          <span class="trend up">↑ Normal</span>
+        </div>
+        <div class="stat-card gradient-3">
+          <small>Tekanan</small>
+          <h2 id="statTekanan">-- hPa</h2>
+          <span class="trend down">↓ Turun tipis</span>
+        </div>
+        <div class="stat-card gradient-4">
+          <small>Cahaya</small>
+          <h2 id="statCahaya">-- lx</h2>
+          <span class="trend up">↑ Cerah</span>
+        </div>
+      </section>
+
+      <!-- Daftar Sensor -->
+      <section class="panel">
+        <div class="panel-header">
+          <h3>Daftar Perangkat Sensor</h3>
+          <span class="badge-pill ok" id="sensorCount">Memuat...</span>
+        </div>
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Perangkat</th>
+                <th>Tipe Sensor</th>
+                <th>Nilai Terkini</th>
+                <th>Terakhir Update</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="sensorTable">
+              <tr><td colspan="5" style="text-align:center;color:var(--muted)">Memuat data...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script type="module" src="js/dashboard.js"></script>
+  <script>
+    // Isi tabel sensor dari data dummy / Firebase
+    function populateSensorTable(data) {
+      const tbody = document.getElementById('sensorTable');
+      const now = new Date().toLocaleTimeString('id-ID');
+      const sensors = [
+        { perangkat: 'ESP32 - Ruang 1', tipe: 'DHT22', nilai: `${data.suhu ?? '--'}°C / ${data.kelembapan ?? '--'}%`, status: 'OK' },
+        { perangkat: 'ESP32 - Ruang 2', tipe: 'BMP280', nilai: `${data.tekanan ?? '--'} hPa`, status: 'OK' },
+        { perangkat: 'ESP8266 - Outdoor', tipe: 'LDR', nilai: `${data.cahaya ?? '--'} lx`, status: 'OK' },
+        { perangkat: 'ESP32 - Pintu', tipe: 'PIR', nilai: 'Offline', status: 'ERR' },
+      ];
+      document.getElementById('sensorCount').textContent = `${sensors.length} Sensor`;
+      tbody.innerHTML = sensors.map(s => `
+        <tr>
+          <td>${s.perangkat}</td>
+          <td>${s.tipe}</td>
+          <td>${s.nilai}</td>
+          <td>${now}</td>
+          <td><span class="badge-pill ${s.status === 'OK' ? 'ok' : 'err'}">${s.status}</span></td>
+        </tr>
+      `).join('');
+    }
+
+    // Load dummy data sebagai fallback
+    fetch('data/dummy.json').then(r => r.json()).then(data => {
+      populateSensorTable(data);
+      document.getElementById('statSuhu').textContent = (data.suhu ?? '--') + '°C';
+      document.getElementById('statKelembapan').textContent = (data.kelembapan ?? '--') + '%';
+      document.getElementById('statTekanan').textContent = (data.tekanan ?? '--') + ' hPa';
+      document.getElementById('statCahaya').textContent = (data.cahaya ?? '--') + ' lx';
+    }).catch(() => {});
+  </script>
+</body>
+</html>

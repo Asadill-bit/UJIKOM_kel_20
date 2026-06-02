@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pengaturan | Monitoring IoT</title>
+  <meta name="description" content="Pengaturan akun dan konfigurasi sistem monitoring IoT." />
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="css/dashboard.css" />
+  <style>
+    .settings-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+    @media (max-width: 768px) {
+      .settings-grid { grid-template-columns: 1fr; }
+    }
+    .form-field {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-bottom: 16px;
+    }
+    .form-field label {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .form-field input, .form-field select, .form-field textarea {
+      padding: 10px 14px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text);
+      font-size: 0.95rem;
+      transition: border-color 0.2s;
+      outline: none;
+    }
+    .form-field input:focus, .form-field select:focus {
+      border-color: var(--primary);
+    }
+    .toggle-switch {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .toggle-switch:last-child { border-bottom: none; }
+    .toggle-switch span { font-size: 0.95rem; }
+    .toggle-switch small { color: var(--muted); font-size: 0.8rem; display: block; }
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 44px;
+      height: 24px;
+      flex-shrink: 0;
+    }
+    .switch input { opacity: 0; width: 0; height: 0; }
+    .slider {
+      position: absolute; cursor: pointer;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: var(--border);
+      border-radius: 24px;
+      transition: 0.3s;
+    }
+    .slider:before {
+      position: absolute; content: "";
+      height: 18px; width: 18px;
+      left: 3px; bottom: 3px;
+      background: white;
+      border-radius: 50%;
+      transition: 0.3s;
+    }
+    .switch input:checked + .slider { background: var(--primary); }
+    .switch input:checked + .slider:before { transform: translateX(20px); }
+    .save-btn {
+      margin-top: 8px;
+    }
+    .alert-success {
+      display: none;
+      background: rgba(16,185,129,0.1);
+      border: 1px solid rgba(16,185,129,0.3);
+      color: #10b981;
+      padding: 10px 16px;
+      border-radius: 10px;
+      font-size: 0.9rem;
+      margin-top: 12px;
+    }
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-brand">
+        <img src="img/logo.png" alt="Logo" />
+        <span>Monitoring<strong>IoT</strong></span>
+      </div>
+      <nav class="sidebar-nav">
+        <a href="dashboard.html" id="nav-dashboard">📊 Dashboard</a>
+        <a href="sensor.html" id="nav-sensor">🌡 Sensor</a>
+        <a href="riwayat.html" id="nav-riwayat">📈 Riwayat</a>
+        <a href="pengaturan.html" id="nav-pengaturan" class="active">⚙ Pengaturan</a>
+        <a href="#" id="logoutBtn" class="logout">↩ Keluar</a>
+      </nav>
+    </aside>
+
+    <!-- Main -->
+    <main class="main">
+      <header class="topbar">
+        <div>
+          <h1>Pengaturan</h1>
+          <p class="muted">Kelola akun dan konfigurasi sistem monitoring Anda.</p>
+        </div>
+        <div class="topbar-actions">
+          <div class="status-pill"><span class="dot online"></span> Terhubung</div>
+          <div class="avatar">U</div>
+        </div>
+      </header>
+
+      <div class="settings-grid">
+        <!-- Profil -->
+        <section class="panel">
+          <div class="panel-header">
+            <h3>👤 Profil Akun</h3>
+          </div>
+          <form id="profileForm">
+            <div class="form-field">
+              <label>Nama Tampilan</label>
+              <input type="text" id="displayName" placeholder="Nama Anda" />
+            </div>
+            <div class="form-field">
+              <label>Email</label>
+              <input type="email" id="userEmail" placeholder="email@contoh.com" readonly style="opacity:0.6;cursor:not-allowed" />
+            </div>
+            <div class="form-field">
+              <label>Zona Waktu</label>
+              <select id="timezone">
+                <option value="Asia/Jakarta" selected>WIB (UTC+7) - Jakarta</option>
+                <option value="Asia/Makassar">WITA (UTC+8) - Makassar</option>
+                <option value="Asia/Jayapura">WIT (UTC+9) - Jayapura</option>
+              </select>
+            </div>
+            <button type="submit" class="btn btn-primary save-btn">Simpan Perubahan</button>
+            <div class="alert-success" id="profileAlert">✓ Profil berhasil disimpan!</div>
+          </form>
+        </section>
+
+        <!-- Notifikasi -->
+        <section class="panel">
+          <div class="panel-header">
+            <h3>🔔 Notifikasi</h3>
+          </div>
+          <div>
+            <div class="toggle-switch">
+              <div>
+                <span>Peringatan Suhu Tinggi</span>
+                <small>Notifikasi jika suhu melebihi ambang batas</small>
+              </div>
+              <label class="switch">
+                <input type="checkbox" id="notifSuhu" checked />
+                <span class="slider"></span>
+              </label>
+            </div>
+            <div class="toggle-switch">
+              <div>
+                <span>Sensor Offline</span>
+                <small>Notifikasi jika sensor terputus</small>
+              </div>
+              <label class="switch">
+                <input type="checkbox" id="notifOffline" checked />
+                <span class="slider"></span>
+              </label>
+            </div>
+            <div class="toggle-switch">
+              <div>
+                <span>Laporan Harian</span>
+                <small>Ringkasan data dikirim tiap pagi</small>
+              </div>
+              <label class="switch">
+                <input type="checkbox" id="notifReport" />
+                <span class="slider"></span>
+              </label>
+            </div>
+          </div>
+        </section>
+
+        <!-- Ambang Batas Sensor -->
+        <section class="panel">
+          <div class="panel-header">
+            <h3>⚠️ Ambang Batas Sensor</h3>
+          </div>
+          <form id="thresholdForm">
+            <div class="form-field">
+              <label>Suhu Maksimum (°C)</label>
+              <input type="number" id="maxSuhu" value="35" min="20" max="60" />
+            </div>
+            <div class="form-field">
+              <label>Kelembapan Minimum (%)</label>
+              <input type="number" id="minKelembapan" value="40" min="10" max="90" />
+            </div>
+            <div class="form-field">
+              <label>Cahaya Minimum (lx)</label>
+              <input type="number" id="minCahaya" value="100" min="0" max="2000" />
+            </div>
+            <button type="submit" class="btn btn-primary save-btn">Simpan Ambang Batas</button>
+            <div class="alert-success" id="thresholdAlert">✓ Ambang batas berhasil disimpan!</div>
+          </form>
+        </section>
+
+        <!-- Info Sistem -->
+        <section class="panel">
+          <div class="panel-header">
+            <h3>ℹ️ Informasi Sistem</h3>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:10px;">
+            <div class="toggle-switch">
+              <span>Versi Aplikasi</span>
+              <span style="color:var(--muted)">v1.0.0</span>
+            </div>
+            <div class="toggle-switch">
+              <span>Firebase SDK</span>
+              <span style="color:var(--muted)">v10.12.0</span>
+            </div>
+            <div class="toggle-switch">
+              <span>Status Database</span>
+              <span class="badge-pill ok" id="dbStatus">Terhubung</span>
+            </div>
+            <div class="toggle-switch">
+              <span>Sensor Aktif</span>
+              <span style="color:var(--muted)" id="activeSensors">3 dari 4</span>
+            </div>
+          </div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <script type="module" src="js/dashboard.js"></script>
+  <script>
+    // Form Profil
+    document.getElementById('profileForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+      const alert = document.getElementById('profileAlert');
+      alert.style.display = 'block';
+      setTimeout(() => alert.style.display = 'none', 3000);
+    });
+
+    // Form Ambang Batas
+    document.getElementById('thresholdForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+      const alert = document.getElementById('thresholdAlert');
+      // Simpan ke localStorage
+      localStorage.setItem('threshold_suhu', document.getElementById('maxSuhu').value);
+      localStorage.setItem('threshold_kelembapan', document.getElementById('minKelembapan').value);
+      localStorage.setItem('threshold_cahaya', document.getElementById('minCahaya').value);
+      alert.style.display = 'block';
+      setTimeout(() => alert.style.display = 'none', 3000);
+    });
+
+    // Load saved settings
+    document.addEventListener('DOMContentLoaded', () => {
+      const suhu = localStorage.getItem('threshold_suhu');
+      const kelembapan = localStorage.getItem('threshold_kelembapan');
+      const cahaya = localStorage.getItem('threshold_cahaya');
+      if (suhu) document.getElementById('maxSuhu').value = suhu;
+      if (kelembapan) document.getElementById('minKelembapan').value = kelembapan;
+      if (cahaya) document.getElementById('minCahaya').value = cahaya;
+    });
+  </script>
+</body>
+</html>

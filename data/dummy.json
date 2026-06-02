@@ -1,0 +1,18 @@
+{
+  "suhu": 27.4,
+  "kelembapan": 68,
+  "tekanan": 1012,
+  "cahaya": 540,
+  "chart": {
+    "labels": ["00:00","03:00","06:00","09:00","12:00","15:00","18:00","21:00"],
+    "suhu": [26.1, 25.8, 26.4, 27.2, 28.5, 28.9, 27.8, 27.0],
+    "kelembapan": [72, 74, 73, 70, 65, 64, 67, 70]
+  },
+  "history": [
+    { "waktu": "10:32", "sensor": "DHT22 - Ruang 1", "nilai": "27.4°C / 68%", "status": "OK" },
+    { "waktu": "10:30", "sensor": "BMP280 - Ruang 2", "nilai": "1012 hPa", "status": "OK" },
+    { "waktu": "10:28", "sensor": "LDR - Outdoor", "nilai": "540 lx", "status": "OK" },
+    { "waktu": "10:25", "sensor": "DHT22 - Ruang 3", "nilai": "30.1°C / 78%", "status": "WARN" },
+    { "waktu": "10:20", "sensor": "PIR - Pintu", "nilai": "Offline", "status": "ERR" }
+  ]
+}

@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard | Monitoring IoT</title>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <style>
+    *{
+      margin:0;
+      padding:0;
+      box-sizing:border-box;
+      font-family:Arial, Helvetica, sans-serif;
+    }
+
+    body{
+      background:#f3f4f6;
+    }
+
+    .app-shell{
+      display:flex;
+      min-height:100vh;
+    }
+
+    /* ================= SIDEBAR ================= */
+    .sidebar{
+      width:260px;
+      background:#111827;
+      color:white;
+      position:fixed;
+      left:0;
+      top:0;
+      height:100vh;
+      padding:20px;
+      z-index:1000;
+    }
+
+    .sidebar-brand{
+      display:flex;
+      align-items:center;
+      gap:12px;
+      margin-bottom:40px;
+      font-size:20px;
+      font-weight:bold;
+    }
+
+    .sidebar-brand img{
+      width:40px;
+      height:40px;
+      border-radius:10px;
+    }
+
+    .sidebar-nav{
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+    }
+
+    .sidebar-nav a{
+      text-decoration:none;
+      color:white;
+      padding:14px 16px;
+      border-radius:12px;
+      transition:0.3s;
+      display:block;
+    }
+
+    .sidebar-nav a:hover{
+      background:rgba(255,255,255,0.1);
+    }
+
+    .sidebar-nav a.active{
+      background:#2563eb;
+    }
+
+    .logout{
+      margin-top:20px;
+      background:#dc2626;
+    }
+
+    .logout:hover{
+      background:#b91c1c !important;
+    }
+
+    /* ================= MAIN ================= */
+    .main{
+      margin-left:260px;
+      width:calc(100% - 260px);
+      padding:25px;
+    }
+
+    /* ================= TOPBAR ================= */
+    .topbar{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      margin-bottom:25px;
+    }
+
+    .topbar h1{
+      font-size:28px;
+      margin-bottom:5px;
+    }
+
+    .muted{
+      color:#6b7280;
+    }
+
+    .topbar-actions{
+      display:flex;
+      align-items:center;
+      gap:15px;
+    }
+
+    .status-pill{
+      background:white;
+      padding:10px 14px;
+      border-radius:20px;
+      font-size:14px;
+      display:flex;
+      align-items:center;
+      gap:8px;
+      box-shadow:0 2px 10px rgba(0,0,0,0.08);
+    }
+
+    .dot{
+      width:10px;
+      height:10px;
+      border-radius:50%;
+      display:inline-block;
+    }
+
+    .online{
+      background:#22c55e;
+    }
+
+    .warn{
+      background:#f59e0b;
+    }
+
+    .off{
+      background:#ef4444;
+    }
+
+    .avatar{
+      width:42px;
+      height:42px;
+      border-radius:50%;
+      background:#2563eb;
+      color:white;
+      display:flex;
+      justify-content:center;
+      align-items:center;
+      font-weight:bold;
+    }
+
+    /* ================= STATS ================= */
+    .stats-grid{
+      display:grid;
+      grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+      gap:20px;
+      margin-bottom:25px;
+    }
+
+    .stat-card{
+      padding:22px;
+      border-radius:20px;
+      color:white;
+      box-shadow:0 5px 20px rgba(0,0,0,0.08);
+    }
+
+    .stat-card small{
+      font-size:14px;
+      opacity:0.9;
+    }
+
+    .stat-card h2{
+      font-size:32px;
+      margin:10px 0;
+    }
+
+    .trend{
+      font-size:14px;
+    }
+
+    .gradient-1{
+      background:linear-gradient(135deg,#3b82f6,#2563eb);
+    }
+
+    .gradient-2{
+      background:linear-gradient(135deg,#10b981,#059669);
+    }
+
+    .gradient-3{
+      background:linear-gradient(135deg,#f59e0b,#d97706);
+    }
+
+    .gradient-4{
+      background:linear-gradient(135deg,#8b5cf6,#7c3aed);
+    }
+
+    /* ================= PANELS ================= */
+    .dashboard-grid{
+      display:grid;
+      grid-template-columns:2fr 1fr;
+      gap:20px;
+      margin-bottom:25px;
+    }
+
+    .panel{
+      background:white;
+      border-radius:20px;
+      padding:20px;
+      box-shadow:0 5px 20px rgba(0,0,0,0.06);
+    }
+
+    .panel-header{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      margin-bottom:20px;
+    }
+
+    .panel-header h3{
+      font-size:20px;
+    }
+
+    select{
+      padding:10px;
+      border-radius:10px;
+      border:1px solid #ddd;
+      outline:none;
+    }
+
+    /* ================= ACTIVITY ================= */
+    .activity-list{
+      list-style:none;
+    }
+
+    .activity-list li{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      padding:12px 0;
+      border-bottom:1px solid #eee;
+      font-size:14px;
+    }
+
+    .activity-list small{
+      color:#6b7280;
+    }
+
+    /* ================= TABLE ================= */
+    .table-wrap{
+      overflow-x:auto;
+    }
+
+    .data-table{
+      width:100%;
+      border-collapse:collapse;
+    }
+
+    .data-table th,
+    .data-table td{
+      padding:14px;
+      text-align:left;
+      border-bottom:1px solid #eee;
+    }
+
+    .data-table th{
+      background:#f9fafb;
+    }
+
+    /* ================= CHART ================= */
+    canvas{
+      width:100% !important;
+      max-width:100%;
+    }
+
+    /* ================= RESPONSIVE ================= */
+    @media(max-width:900px){
+
+      .sidebar{
+        width:220px;
+      }
+
+      .main{
+        margin-left:220px;
+        width:calc(100% - 220px);
+      }
+
+      .dashboard-grid{
+        grid-template-columns:1fr;
+      }
+    }
+
+    @media(max-width:700px){
+
+      .sidebar{
+        position:relative;
+        width:100%;
+        height:auto;
+      }
+
+      .app-shell{
+        flex-direction:column;
+      }
+
+      .main{
+        margin-left:0;
+        width:100%;
+      }
+
+      .topbar{
+        flex-direction:column;
+        align-items:flex-start;
+        gap:15px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="app-shell">
+
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-brand">
+        <img src="img/logo.png" alt="Logo" />
+        <span>Monitoring<strong>IoT</strong></span>
+      </div>
+
+      <nav class="sidebar-nav">
+        <a href="dashboard.html" class="active">📊 Dashboard</a>
+        <a href="#">🌡 Sensor</a>
+        <a href="#">📈 Riwayat</a>
+        <a href="#">⚙ Pengaturan</a>
+        <a href="#" id="logoutBtn" class="logout">↩ Keluar</a>
+      </nav>
+    </aside>
+
+    <!-- Main -->
+    <main class="main">
+
+      <header class="topbar">
+        <div>
+          <h1>Dashboard Monitoring</h1>
+          <p class="muted">
+            Selamat datang kembali, pantau perangkat Anda di sini.
+          </p>
+        </div>
+
+        <div class="topbar-actions">
+          <div class="status-pill">
+            <span class="dot online"></span>
+            Terhubung
+          </div>
+
+          <div class="avatar">U</div>
+        </div>
+      </header>
+
+      <!-- Stats -->
+      <section class="stats-grid">
+
+        <div class="stat-card gradient-1">
+          <small>Suhu</small>
+          <h2 id="statSuhu">--°C</h2>
+          <span class="trend">↑ Stabil</span>
+        </div>
+
+        <div class="stat-card gradient-2">
+          <small>Kelembapan</small>
+          <h2 id="statKelembapan">--%</h2>
+          <span class="trend">↑ Normal</span>
+        </div>
+
+        <div class="stat-card gradient-3">
+          <small>Tekanan</small>
+          <h2 id="statTekanan">-- hPa</h2>
+          <span class="trend">↓ Turun tipis</span>
+        </div>
+
+        <div class="stat-card gradient-4">
+          <small>Cahaya</small>
+          <h2 id="statCahaya">-- lx</h2>
+          <span class="trend">↑ Cerah</span>
+        </div>
+
+      </section>
+
+      <!-- Chart + Activity -->
+      <section class="dashboard-grid">
+
+        <div class="panel">
+          <div class="panel-header">
+            <h3>Grafik Sensor</h3>
+
+            <select id="rangeSelect">
+              <option>24 Jam Terakhir</option>
+              <option>7 Hari</option>
+              <option>30 Hari</option>
+            </select>
+          </div>
+
+          <canvas id="sensorChart" height="120"></canvas>
+        </div>
+
+        <div class="panel">
+          <div class="panel-header">
+            <h3>Aktivitas Terbaru</h3>
+          </div>
+
+          <ul class="activity-list" id="activityList">
+            <li><span class="dot online"></span> Sensor A terhubung <small>2 mnt lalu</small></li>
+            <li><span class="dot warn"></span> Suhu naik di Ruang 1 <small>10 mnt lalu</small></li>
+            <li><span class="dot online"></span> Sinkronisasi data berhasil <small>15 mnt lalu</small></li>
+            <li><span class="dot off"></span> Sensor B offline <small>1 jam lalu</small></li>
+          </ul>
+        </div>
+
+      </section>
+
+      <!-- Table -->
+      <section class="panel">
+
+        <div class="panel-header">
+          <h3>Data Sensor</h3>
+        </div>
+
+        <div class="table-wrap">
+
+          <table class="data-table">
+
+            <thead>
+              <tr>
+                <th>Waktu</th>
+                <th>Sensor</th>
+                <th>Nilai</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+
+            <tbody id="dataTable">
+              <tr>
+                <td>08:30</td>
+                <td>Suhu</td>
+                <td>29°C</td>
+                <td>Normal</td>
+              </tr>
+
+              <tr>
+                <td>08:31</td>
+                <td>Kelembapan</td>
+                <td>70%</td>
+                <td>Baik</td>
+              </tr>
+            </tbody>
+
+          </table>
+
+        </div>
+
+      </section>
+
+    </main>
+
+  </div>
+
+  <script>
+    const ctx = document.getElementById('sensorChart');
+
+    new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: ['08:00', '09:00', '10:00', '11:00', '12:00'],
+        datasets: [{
+          label: 'Suhu',
+          data: [28, 29, 30, 29, 31],
+          tension: 0.4
+        }]
+      },
+      options: {
+        responsive: true
+      }
+    });
+  </script>
+
+</body>
+</html>

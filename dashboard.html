@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard | Monitoring IoT</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="css/dashboard.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    /* ===== Relay Toggle Switch ===== */
+    .relay-switch {
+      position: relative;
+      display: inline-block;
+      width: 56px;
+      height: 30px;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+    .relay-switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+    .relay-slider {
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: #cbd5e1;
+      border-radius: 30px;
+      transition: 0.3s;
+    }
+    .relay-slider::before {
+      content: "";
+      position: absolute;
+      width: 22px; height: 22px;
+      left: 4px; bottom: 4px;
+      background: white;
+      border-radius: 50%;
+      transition: 0.3s;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+    }
+    .relay-switch input:checked + .relay-slider {
+      background: #22c55e;
+    }
+    .relay-switch input:checked + .relay-slider::before {
+      transform: translateX(26px);
+    }
+    .relay-switch:hover .relay-slider {
+      filter: brightness(0.95);
+    }
+    /* Badge status sensor */
+    .badge-pill {
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .badge-pill.ok   { background: #dcfce7; color: #15803d; }
+    .badge-pill.warn { background: #fef9c3; color: #a16207; }
+    .badge-pill.err  { background: #fee2e2; color: #b91c1c; }
+  </style>
+</head>
+
+<body>
+
+  <div class="app-shell">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-brand">
+        <img src="img/logo.png" alt="Logo" />
+        <span>Monitoring<strong>IoT</strong></span>
+      </div>
+      <nav class="sidebar-nav">
+        <a href="dashboard.html" class="active">📊 Dashboard</a>
+        <a href="#">🌡 Sensor</a>
+        <a href="#">📈 Riwayat</a>
+        <a href="#">⚙ Pengaturan</a>
+        <a href="#" id="logoutBtn" class="logout">↩ Keluar</a>
+      </nav>
+    </aside>
+
+    <!-- Main -->
+    <main class="main">
+      <header class="topbar">
+        <div>
+          <h1>Dashboard Monitoring</h1>
+          <p class="muted">Selamat datang kembali, pantau perangkat Anda di sini.</p>
+        </div>
+        <div class="topbar-actions">
+          <div class="status-pill"><span class="dot online"></span> Terhubung</div>
+          <div class="avatar">U</div>
+        </div>
+      </header>
+
+      <!-- Stats: hanya Suhu & Cahaya -->
+      <section class="stats-grid" style="grid-template-columns: repeat(2, 1fr);">
+        <div class="stat-card gradient-1">
+          <small>🌡 Suhu</small>
+          <h2 id="statSuhu">--°C</h2>
+          <span class="trend up" id="trendSuhu">↑ Memuat...</span>
+        </div>
+        <div class="stat-card gradient-4">
+          <small>☀️ Cahaya</small>
+          <h2 id="statCahaya">-- lx</h2>
+          <span class="trend up" id="trendCahaya">↑ Memuat...</span>
+        </div>
+      </section>
+
+      <!-- Chart + Table -->
+      <section class="dashboard-grid">
+        <div class="panel">
+          <div class="panel-header">
+            <h3>Grafik Sensor</h3>
+            <select id="rangeSelect">
+              <option>24 Jam Terakhir</option>
+              <option>7 Hari</option>
+              <option>30 Hari</option>
+            </select>
+          </div>
+          <canvas id="sensorChart" height="120"></canvas>
+        </div>
+
+        <div class="panel">
+          <div class="panel-header">
+            <h3>Aktivitas Terbaru</h3>
+          </div>
+          <ul class="activity-list" id="activityList">
+            <li><span class="dot online"></span> Sensor A terhubung <small>2 mnt lalu</small></li>
+            <li><span class="dot warn"></span> Suhu naik di Ruang 1 <small>10 mnt lalu</small></li>
+            <li><span class="dot online"></span> Sinkronisasi data berhasil <small>15 mnt lalu</small></li>
+            <li><span class="dot off"></span> Sensor B offline <small>1 jam lalu</small></li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- Relay Control -->
+      <section class="panel">
+        <div class="panel-header">
+          <h3>⚡ Kontrol Relay</h3>
+          <span class="muted" style="font-size:0.82rem">Klik toggle untuk nyalakan/matikan perangkat</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:20px;padding:16px 0;">
+          <div style="flex:1">
+            <div style="font-weight:600;font-size:1rem;">Relay 1</div>
+            <div class="muted" style="font-size:0.83rem;margin-top:2px;">Perangkat / Lampu</div>
+          </div>
+          <span id="relayLabel" style="font-size:0.9rem;color:var(--muted);min-width:40px;">OFF</span>
+          <label class="relay-switch" title="Toggle Relay 1">
+            <input type="checkbox" id="relayToggle" />
+            <span class="relay-slider"></span>
+          </label>
+        </div>
+        <div id="relayStatus" style="font-size:0.82rem;color:var(--muted);padding-bottom:4px;">Status: Memuat...</div>
+      </section>
+
+      <!-- Tabel Data -->
+      <section class="panel">
+        <div class="panel-header">
+          <h3>Data Sensor</h3>
+        </div>
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr><th>Waktu</th><th>Sensor</th><th>Nilai</th><th>Status</th></tr>
+            </thead>
+            <tbody id="dataTable"></tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- dashboard.js harus dimuat sebagai module SEBELUM sensorChart.js -->
+  <script type="module" src="js/dashboard.js"></script>
+  <!-- sensorChart.js dimuat setelah dashboard.js agar window.__sensorData sudah tersedia -->
+  <script src="js/sensorChart.js"></script>
+</body>
+</html>

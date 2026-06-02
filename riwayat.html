@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Riwayat Data | Monitoring IoT</title>
+  <meta name="description" content="Riwayat lengkap data sensor IoT. Filter dan unduh data historis untuk analisis." />
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="css/dashboard.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <div class="app-shell">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-brand">
+        <img src="img/logo.png" alt="Logo" />
+        <span>Monitoring<strong>IoT</strong></span>
+      </div>
+      <nav class="sidebar-nav">
+        <a href="dashboard.html" id="nav-dashboard">📊 Dashboard</a>
+        <a href="sensor.html" id="nav-sensor">🌡 Sensor</a>
+        <a href="riwayat.html" id="nav-riwayat" class="active">📈 Riwayat</a>
+        <a href="pengaturan.html" id="nav-pengaturan">⚙ Pengaturan</a>
+        <a href="#" id="logoutBtn" class="logout">↩ Keluar</a>
+      </nav>
+    </aside>
+
+    <!-- Main -->
+    <main class="main">
+      <header class="topbar">
+        <div>
+          <h1>Riwayat Data</h1>
+          <p class="muted">Lihat dan analisis data historis dari semua sensor.</p>
+        </div>
+        <div class="topbar-actions">
+          <div class="status-pill"><span class="dot online"></span> Terhubung</div>
+          <div class="avatar">U</div>
+        </div>
+      </header>
+
+      <!-- Filter -->
+      <section class="panel" style="padding: 16px 20px;">
+        <div class="panel-header" style="flex-wrap:wrap;gap:12px;">
+          <h3>Filter Data</h3>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;">
+            <select id="filterSensor" style="padding:6px 12px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text)">
+              <option value="all">Semua Sensor</option>
+              <option value="dht22">DHT22 (Suhu/Kelembapan)</option>
+              <option value="bmp280">BMP280 (Tekanan)</option>
+              <option value="ldr">LDR (Cahaya)</option>
+            </select>
+            <select id="filterRange" style="padding:6px 12px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text)">
+              <option>24 Jam Terakhir</option>
+              <option>7 Hari</option>
+              <option>30 Hari</option>
+            </select>
+          </div>
+        </div>
+      </section>
+
+      <!-- Chart -->
+      <section class="panel">
+        <div class="panel-header">
+          <h3>Grafik Riwayat Sensor</h3>
+        </div>
+        <canvas id="historyChart" height="110"></canvas>
+      </section>
+
+      <!-- Tabel Riwayat -->
+      <section class="panel">
+        <div class="panel-header">
+          <h3>Log Data Sensor</h3>
+          <span id="rowCount" class="badge-pill ok">0 entri</span>
+        </div>
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Waktu</th>
+                <th>Sensor</th>
+                <th>Nilai</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="historyTable">
+              <tr><td colspan="4" style="text-align:center;color:var(--muted)">Memuat data...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script type="module" src="js/dashboard.js"></script>
+  <script>
+    // Render chart riwayat
+    fetch('data/dummy.json').then(r => r.json()).then(data => {
+      // Chart
+      const ctx = document.getElementById('historyChart');
+      new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: data.chart?.labels || [],
+          datasets: [
+            {
+              label: 'Suhu (°C)',
+              data: data.chart?.suhu || [],
+              borderColor: '#4f46e5',
+              backgroundColor: 'rgba(79,70,229,.1)',
+              fill: true, tension: .4, borderWidth: 2, pointRadius: 4
+            },
+            {
+              label: 'Kelembapan (%)',
+              data: data.chart?.kelembapan || [],
+              borderColor: '#06b6d4',
+              backgroundColor: 'rgba(6,182,212,.08)',
+              fill: true, tension: .4, borderWidth: 2, pointRadius: 4
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            legend: { position: 'bottom', labels: { boxWidth: 10, usePointStyle: true, padding: 20 } },
+            tooltip: { backgroundColor: 'rgba(15,23,42,0.9)', titleColor: '#94a3b8', bodyColor: '#f1f5f9', padding: 12, cornerRadius: 8 }
+          },
+          scales: {
+            y: { grid: { color: 'rgba(148,163,184,0.1)' }, ticks: { color: '#94a3b8' } },
+            x: { grid: { display: false }, ticks: { color: '#94a3b8' } }
+          }
+        }
+      });
+
+      // Tabel
+      const rows = data.history || [];
+      document.getElementById('rowCount').textContent = `${rows.length} entri`;
+      document.getElementById('historyTable').innerHTML = rows.map(r => `
+        <tr>
+          <td>${r.waktu}</td>
+          <td>${r.sensor}</td>
+          <td>${r.nilai}</td>
+          <td><span class="badge-pill ${r.status === 'OK' ? 'ok' : r.status === 'WARN' ? 'warn' : 'err'}">${r.status}</span></td>
+        </tr>
+      `).join('');
+    }).catch(() => {});
+  </script>
+</body>
+</html>
