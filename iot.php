@@ -15,13 +15,13 @@
  */
 
 // URL Firebase Realtime Database Anda (tanpa trailing slash)
-define('FIREBASE_DB_URL', 'https://monitoring-iot-29ac6-default-rtdb.asia-southeast1.firebasedatabase.app');
+define('FIREBASE_DB_URL', 'https://monitoring-iot-ujikom-ea02d-default-rtdb.asia-southeast1.firebasedatabase.app');
 
 // Database Secret (Legacy Token) — Ambil dari:
 // Firebase Console → Project Settings → Service Accounts → Database Secrets → Show
 // ATAU: atur Firebase Rules ke public write untuk testing (lihat README)
 define('FIREBASE_SECRET', '');   // <-- Isi jika menggunakan autentikasi
-
+    
 // Jumlah maksimum entri riwayat yang disimpan di Firebase
 define('MAX_HISTORY', 50);
 
@@ -103,6 +103,7 @@ function parseData(string $raw): ?array
 function sensorPath(string $name): string
 {
     // Mapping nama sensor dari micro:bit ke path Firebase
+    // ⚠ PENTING: Paths harus match dengan yang didengarkan di dashboard.js
     $map = [
         'suhu' => '/sensor/suhu',
         'temp' => '/sensor/suhu',
@@ -114,10 +115,10 @@ function sensorPath(string $name): string
         'cahaya' => '/sensor/cahaya',
         'light' => '/sensor/cahaya',
         'lux' => '/sensor/cahaya',
-        'relay1' => '/relay/1',
-        'relay2' => '/relay/2',
-        'relay3' => '/relay/3',
-        'relay4' => '/relay/4',
+        'relay1' => '/iot/relay/1',
+        'relay2' => '/iot/relay/2',
+        'relay3' => '/iot/relay/3',
+        'relay4' => '/iot/relay/4',
         'uid' => '/sensor/uid',       // untuk NFC/RFID
         'rfid' => '/sensor/uid',
     ];
@@ -163,43 +164,58 @@ function appendHistory(string $name, $value): void
 //  ROUTING — Tangani request dari ESP8266
 // ================================================================
 
-// --- MODE: Baca Relay ---
+/**
+ * MODE: Baca Relay
+ * Menangkap parameter '?relay=N' dari URL (Metode HTTP GET).
+ * Digunakan oleh micro:bit untuk mengecek apakah lampu/kipas harus menyala (1) atau mati (0).
+ */
 if (isset($_GET['relay'])) {
 
     // HAPUS SEMUA OUTPUT BUFFER
+    // Memastikan tidak ada sisa teks atau spasi tersembunyi yang ikut terkirim ke micro:bit
     while (ob_get_level()) {
         ob_end_clean();
     }
 
+    // Mengonversi input parameter menjadi angka bulat (integer) untuk validasi nomor relay
     $relayNum = (int) $_GET['relay'];
 
+    // Membatasi validasi: Jika nomor relay di luar rentang 1-4, hentikan program dan kembalikan nilai 0
     if ($relayNum < 1 || $relayNum > 4) {
-
         die("0");
     }
 
-    $res = firebaseRequest('GET', '/relay/' . $relayNum);
+    // Mengambil status relay terbaru dari Firebase REST API berdasarkan nomor relay-nya
+    $res = firebaseRequest('GET', '/iot/relay/' . $relayNum);
 
+    // Jika koneksi ke cloud Firebase gagal (status code bukan 200 OK), kembalikan nilai 0 demi keamanan
     if ($res['status'] !== 200) {
-
         die("0");
     }
 
+    // Membersihkan karakter aneh, tanda kutip, spasi, atau baris baru (\r\n) dari respon Firebase
     $val = trim($res['body'], "\" \r\n\t");
 
     // RESPONSE HARUS MURNI
+    // Jika data di Firebase bernilai "1", kirimkan karakter "1" polos ke micro:bit
     if ($val === "1") {
-
         die("1");
     }
 
+    // Jika data bernilai 0 atau null, kirimkan karakter "0" polos ke micro:bit
     die("0");
 }
 
-// --- MODE: Tulis Data Sensor ---
+/**
+ * MODE: Tulis Data Sensor
+ * Menangkap parameter '?data=nama_sensor:nilai' dari URL (Metode HTTP GET).
+ * Digunakan oleh micro:bit untuk mengirimkan data hasil pembacaan suhu dan cahaya.
+ */
 if (isset($_GET['data'])) {
+    // Memilah teks mentah (Contoh: "suhu:27") menjadi array terpisah ['name' => 'suhu', 'value' => '27']
     $parsed = parseData($_GET['data']);
 
+    // Jika format salah (tidak menggunakan tanda titik dua), kirim respon eror 400 Bad Request
     if (!$parsed) {
         http_response_code(400);
         echo 'ERROR: Format tidak valid. Gunakan: name:value';
@@ -209,33 +225,31 @@ if (isset($_GET['data'])) {
     $name = $parsed['name'];
     $value = $parsed['value'];
 
-    // Konversi ke angka jika memungkinkan
+    // Konversi nilai menjadi tipe data float/angka desimal jika teks yang dikirim berupa angka
     if (is_numeric($value)) {
         $value = (float) $value;
     }
 
-    // Update nilai sensor di Firebase
+    // Menentukan target path folder di Firebase (misal: /sensor/suhu) dan mengunggah nilai barunya
     $path = sensorPath($name);
     $res = firebaseRequest('PUT', $path, $value);
 
+    // Jika Firebase menolak atau server bermasalah, kembalikan status HTTP 502 Bad Gateway
     if ($res['status'] < 200 || $res['status'] >= 300) {
         http_response_code(502);
         echo 'ERROR: Gagal kirim ke Firebase. HTTP ' . $res['status'];
         exit;
     }
 
-    // Update timestamp terakhir
+    // Memperbarui informasi waktu pengiriman terakhir di Firebase cloud
     firebaseRequest('PUT', '/sensor/lastUpdate', date('Y-m-d H:i:s'));
 
-    // Simpan ke riwayat (hanya untuk sensor utama, bukan relay)
+    // Jika yang dikirim adalah sensor (bukan relay), masukkan nilainya ke dalam folder riwayat (history)
     if (strpos($path, '/relay/') === false) {
         appendHistory($name, $value);
     }
 
+    // Mengembalikan respon teks 'OK' ke micro:bit menandakan siklus pengiriman sukses total
     echo 'OK';
     exit;
 }
-
-// --- Tidak ada parameter yang dikenali ---
-http_response_code(400);
-echo 'ERROR: Parameter tidak dikenali. Gunakan ?data=name:value atau ?relay=N';
